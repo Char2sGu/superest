@@ -1,5 +1,6 @@
-/lib
-/types
+*.js
+*.d.ts
+*.map
 
 # Logs
 logs
