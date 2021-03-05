@@ -5,7 +5,7 @@
   "main": "lib/index.js",
   "type": "module",
   "scripts": {
-    "build": "tsc --outDir lib --declarationDir types --sourceMap --declaration --declarationMap",
+    "build": "tsc",
     "test": "mocha"
   },
   "author": {
@@ -22,7 +22,6 @@
     "/lib",
     "/types"
   ],
-  "types": "/types/index.d.ts",
   "devDependencies": {
     "mocha": "^8.3.0"
   }
