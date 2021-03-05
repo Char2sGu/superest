@@ -1,0 +1,29 @@
+{
+  "name": "superest",
+  "version": "0.1.0",
+  "description": "Wrap your REST API and enjoy a fully typed development!",
+  "main": "lib/index.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc --outDir lib --sourceMap & tsc --outDir types --emitDeclarationOnly -d --declarationMap",
+    "test": "mocha"
+  },
+  "author": {
+    "name": "Char2s",
+    "email": "TheNightmareX@foxmail.com"
+  },
+  "license": "Apache-2.0",
+  "dependencies": {
+    "axios": "^0.21.1",
+    "typescript": "^4.1.5"
+  },
+  "files": [
+    "/src",
+    "/lib",
+    "/types"
+  ],
+  "types": "/types/index.d.ts",
+  "devDependencies": {
+    "mocha": "^8.3.0"
+  }
+}

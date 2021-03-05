@@ -1,3 +1,6 @@
+/lib
+/types
+
 # Logs
 logs
 *.log
