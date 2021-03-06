@@ -5,7 +5,8 @@
   "main": "dist/index.js",
   "type": "module",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc -p src",
+    "build:test": "tsc -p test",
     "test": "mocha"
   },
   "author": {
