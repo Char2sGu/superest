@@ -64,7 +64,7 @@ export abstract class Field<
   }
   toExternal(value: VS | undefined) {
     type V = M["optional"] extends true ? VE | undefined : VE;
-    if (!this.meta.optional) return value as V;
+    if (value === undefined && this.meta.optional) return value as V;
     this.runAllValidations(value);
     return this.toExternalValue(value as VS) as V;
   }
