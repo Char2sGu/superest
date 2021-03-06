@@ -1,4 +1,4 @@
-import { ValidationError } from "../dist/index.js";
+import { ValidationError } from "../lib/index.js";
 
 export function expectValidationError(fn) {
   try {

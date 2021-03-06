@@ -4,7 +4,7 @@ import {
   LengthValidator,
   TypeValidator,
   ValueRangeValidator,
-} from "../dist/index.js";
+} from "../lib/index.js";
 import { expectValidationError } from "./utils.js";
 
 describe("Validators", function () {
