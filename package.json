@@ -2,7 +2,7 @@
   "name": "superest",
   "version": "0.1.0",
   "description": "Wrap your REST API and enjoy a fully typed development!",
-  "main": "lib/index.js",
+  "main": "dist/index.js",
   "type": "module",
   "scripts": {
     "build": "tsc",
@@ -19,7 +19,7 @@
   },
   "files": [
     "/src",
-    "/lib",
+    "/dist",
     "/types"
   ],
   "devDependencies": {
