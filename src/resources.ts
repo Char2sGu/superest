@@ -1,6 +1,6 @@
 import { AxiosInstance, AxiosRequestConfig } from "axios";
-import { Field, Lazy, Meta, Values } from "./fields.js";
-import { IsInstanceValidator, ValidationError } from "./validators.js";
+import { Field, Lazy, Meta, Values } from "./fields";
+import { IsInstanceValidator, ValidationError } from "./validators";
 
 export type PK = string | number;
 

@@ -6,7 +6,7 @@ import {
   ValidationError,
   Validator,
   ValueRangeValidator,
-} from "./validators.js";
+} from "./validators";
 
 export type Meta<
   Extra extends Record<string, unknown> = Record<string, unknown>

@@ -1,4 +1,4 @@
-import { Field } from "./fields.js";
+import { Field } from "./fields";
 
 export class ValidationError extends Error {
   path: string[] = [];
