@@ -5,7 +5,7 @@ import {
   TypeValidator,
   ValidationError,
   ValueRangeValidator,
-} from "../dist/index.js";
+} from "../src/index.js";
 import assert from "assert";
 
 describe("Validators", function () {

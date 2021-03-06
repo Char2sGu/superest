@@ -6,7 +6,7 @@ import {
   NumberField,
   StringField,
   ValidationError,
-} from "../dist/index.js";
+} from "../src/index.js";
 
 describe("Fields", function () {
   describe("Common", function () {

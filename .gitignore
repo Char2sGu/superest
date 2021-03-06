@@ -1,5 +1,6 @@
-/dist
-/test/*.js
+*.js
+*.d.ts
+*.map
 /.vscode
 
 # Logs
