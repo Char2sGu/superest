@@ -3,9 +3,10 @@ import {
   IsInstanceValidator,
   LengthValidator,
   TypeValidator,
+  ValidationError,
   ValueRangeValidator,
 } from "../lib/index.js";
-import { expectValidationError } from "./utils.js";
+import assert from "assert";
 
 describe("Validators", function () {
   describe(LengthValidator.name, function () {
@@ -14,11 +15,17 @@ describe("Validators", function () {
     const validator = new LengthValidator({ max, min });
 
     it("loo large length shouldn't pass", function () {
-      expectValidationError(() => validator.validate({ length: max + 1 }));
+      assert.throws(
+        () => validator.validate({ length: max + 1 }),
+        ValidationError
+      );
     });
 
     it("too small length shouldn't pass", function () {
-      expectValidationError(() => validator.validate({ length: min - 1 }));
+      assert.throws(
+        () => validator.validate({ length: min - 1 }),
+        ValidationError
+      );
     });
 
     it("proper length should pass", function () {
@@ -34,11 +41,11 @@ describe("Validators", function () {
     const validator = new ValueRangeValidator({ max, min });
 
     it("too large value shouldn't pass", function () {
-      expectValidationError(() => validator.validate(max + 1));
+      assert.throws(() => validator.validate(max + 1), ValidationError);
     });
 
     it("too small value shouldn't pass", function () {
-      expectValidationError(() => validator.validate(min - 1));
+      assert.throws(() => validator.validate(min - 1), ValidationError);
     });
 
     it("proper value should pass", function () {
@@ -55,7 +62,7 @@ describe("Validators", function () {
       const validator = new IsInstanceValidator(Cls);
 
       it("not an instance shouldn't pass", function () {
-        expectValidationError(() => validator.validate({}));
+        assert.throws(() => validator.validate({}), ValidationError);
       });
 
       it("an instance should pass", function () {
@@ -71,7 +78,7 @@ describe("Validators", function () {
       const validator = new IsInstanceValidator(Cls1, Cls2);
 
       it("not an instance of any of these shouldn't pass", function () {
-        expectValidationError(() => validator.validate({}));
+        assert.throws(() => validator.validate({}), ValidationError);
       });
 
       it("an instance of some of these should pass", function () {
@@ -88,7 +95,7 @@ describe("Validators", function () {
       const validator = new TypeValidator(type);
 
       it("a wrong type shouldn't pass", function () {
-        expectValidationError(() => validator.validate(0));
+        assert.throws(() => validator.validate(0), ValidationError);
       });
 
       it("a proper type should pass", function () {
@@ -102,7 +109,7 @@ describe("Validators", function () {
       const validator = new TypeValidator(...types);
 
       it("type not in these should't pass", function () {
-        expectValidationError(() => validator.validate(true));
+        assert.throws(() => validator.validate(true), ValidationError);
       });
 
       it("type in these should pass", function () {
@@ -116,7 +123,7 @@ describe("Validators", function () {
     const validator = new ChoicesValidator(...choices);
 
     it("value not in choices shouldn't pass", function () {
-      expectValidationError(() => validator.validate(0));
+      assert.throws(() => validator.validate(0), ValidationError);
     });
 
     it("value in choices should pass", function () {
