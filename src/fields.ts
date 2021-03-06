@@ -194,7 +194,7 @@ export class ListField<M extends Meta<{ field: Field }>> extends Field<
 
   toInternalValue(value: Values<M["field"]>["toReceive"][]) {
     const ret = value.map((v) => this.meta.field.toInternal(v));
-    return () => ret as Values<M["field"]>["internal"][];
+    return () => ret.map((v) => v()) as Values<M["field"]>["internal"][];
   }
   toExternalValue(value: Values<M["field"]>["toSend"][]) {
     return value.map((v) => this.meta.field.toExternal(v)) as Values<
