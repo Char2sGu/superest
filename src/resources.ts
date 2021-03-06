@@ -133,7 +133,6 @@ export abstract class BaseResource<
 > {
   readonly Field;
   protected readonly field;
-  protected abstract readonly axios: AxiosInstance;
   protected readonly cases?: Record<
     "internal" | "external",
     (v: string) => string
@@ -352,6 +351,8 @@ export abstract class SimpleResource<
   Getters extends GettersDesc<Fields>,
   F extends Field
 > extends BaseResource<Fields, PKField, Getters, F> {
+  protected abstract readonly axios: AxiosInstance;
+
   protected parseListResponse(data: unknown) {
     return data as FieldsValues<Fields>["toReceive"][];
   }
