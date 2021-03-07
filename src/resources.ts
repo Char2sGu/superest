@@ -261,7 +261,7 @@ export abstract class BaseResource<
     const resource = this;
 
     type ToReceive = FieldsValues<Fields>["toReceive"] | PK;
-    type Internal = FieldsValues<Fields>["internal"];
+    type Internal = Data<Fields, Getters>;
     type ToSend = FieldsValues<Fields>["toSend"];
     type External = FieldsValues<Fields>["external"];
 
@@ -277,24 +277,26 @@ export abstract class BaseResource<
       }
 
       toInternalValue(value: ToReceive): () => Internal {
-        return typeof value == "object"
-          ? () =>
-              resource.commit(
-                resource.matchFields(
+        if (typeof value == "object") {
+          const data = resource.commit(
+            resource.matchFields(
+              value,
+              {
+                ...resource.description.fields.common,
+                ...resource.description.fields.receive,
+              },
+              (k, v, field) =>
+                this.handleValidationError(
+                  field.toInternal.bind(field),
                   value,
-                  {
-                    ...resource.description.fields.common,
-                    ...resource.description.fields.receive,
-                  },
-                  (k, v, field) =>
-                    this.handleValidationError(
-                      field.toInternal.bind(field),
-                      value,
-                      k
-                    )(v)
-                ) as Lazy<Internal>
-              )
-          : () => resource.objects[value];
+                  k
+                )(v)
+            ) as Lazy<Internal>
+          );
+          return () => data;
+        } else {
+          return () => resource.objects[value];
+        }
       }
       toExternalValue(value: ToSend): External {
         return resource.matchFields(
