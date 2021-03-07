@@ -138,7 +138,7 @@ export abstract class BaseResource<
     (v: string) => string
   >;
   constructor(
-    protected readonly basename: string,
+    readonly basename: string,
     readonly objects: Record<PK, Data<Fields, Getters>>,
     readonly description: {
       fields: Fields;
