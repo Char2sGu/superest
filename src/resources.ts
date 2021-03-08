@@ -1,5 +1,6 @@
 import { AxiosInstance, AxiosRequestConfig } from "axios";
 import { Field, Lazy, Meta, Values } from "./fields";
+import { transformCase } from "./utils";
 import { IsInstanceValidator, ValidationError } from "./validators";
 
 export type PK = string | number;
@@ -133,10 +134,7 @@ export abstract class BaseResource<
 > {
   readonly Field;
   protected readonly field;
-  protected readonly cases?: Record<
-    "internal" | "external",
-    (v: string) => string
-  >;
+
   constructor(
     readonly basename: string,
     readonly objects: Record<PK, Data<Fields, Getters>>,
@@ -239,23 +237,6 @@ export abstract class BaseResource<
     return save(processed as V);
   }
 
-  protected transformCase<R extends Record<string, unknown>>(
-    data: R,
-    type: "internal" | "external"
-  ): R {
-    const handler = this?.cases?.[type] ?? ((v: string) => v);
-    const ret: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(data)) {
-      ret[handler(k)] =
-        v && typeof v == "object"
-          ? v instanceof Array
-            ? v.map((v) => this.transformCase(v, type))
-            : this.transformCase(v as typeof data, type)
-          : v;
-    }
-    return ret as R;
-  }
-
   protected buildField() {
     // eslint-disable-next-line
     const resource = this;
@@ -354,6 +335,10 @@ export abstract class SimpleResource<
   F extends Field
 > extends BaseResource<Fields, PKField, Getters, F> {
   protected abstract readonly axios: AxiosInstance;
+  protected readonly cases?: Record<
+    "internal" | "external",
+    (v: string) => string
+  >;
 
   protected parseListResponse(data: unknown) {
     return data as FieldsValues<Fields>["toReceive"][];
@@ -376,7 +361,7 @@ export abstract class SimpleResource<
     return {
       response,
       data: this.parseListResponse(
-        this.transformCase(response.data, "internal")
+        transformCase(response.data, this.cases?.internal)
       ).map((data) => this.field.toInternal(data)()),
     };
   }
@@ -387,13 +372,15 @@ export abstract class SimpleResource<
   ) {
     const response = await this.axios.post(
       this.getURL(),
-      this.transformCase(this.field.toExternal(data), "external"),
+      transformCase(this.field.toExternal(data), this.cases?.external),
       config
     );
     return {
       response,
       data: this.field.toInternal(
-        this.transformCase(this.parseCreateResponse(response.data), "internal")
+        this.parseCreateResponse(
+          transformCase(response.data, this.cases?.internal)
+        )
       )(),
     };
   }
@@ -403,9 +390,8 @@ export abstract class SimpleResource<
     return {
       response,
       data: this.field.toInternal(
-        this.transformCase(
-          this.parseRetrieveResponse(response.data),
-          "internal"
+        this.parseRetrieveResponse(
+          transformCase(response.data, this.cases?.internal)
         )
       )(),
     };
@@ -418,13 +404,15 @@ export abstract class SimpleResource<
   ) {
     const response = await this.axios.put(
       this.getURL(pk),
-      this.transformCase(this.field.toExternal(data), "external"),
+      this.field.toExternal(data),
       config
     );
     return {
       response,
       data: this.field.toInternal(
-        this.transformCase(this.parseUpdateResponse(response.data), "internal")
+        this.parseUpdateResponse(
+          transformCase(response.data, this.cases?.internal)
+        )
       )(),
     };
   }
@@ -436,18 +424,17 @@ export abstract class SimpleResource<
   ) {
     const response = await this.axios.patch(
       this.getURL(pk),
-      this.transformCase(
+      transformCase(
         this.field.toExternal(data as Required<typeof data>),
-        "external"
+        this.cases?.external
       ),
       config
     );
     return {
       response,
       data: this.field.toInternal(
-        this.transformCase(
-          this.parsePartialUpdateResponse(response.data),
-          "internal"
+        this.parsePartialUpdateResponse(
+          transformCase(response.data, this.cases?.internal)
         )
       )(),
     };
