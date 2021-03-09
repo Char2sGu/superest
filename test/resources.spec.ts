@@ -27,40 +27,36 @@ describe("Resources", function () {
       };
     }
 
-    const childRes = new TestResource(
-      "child",
-      {},
-      {
-        fields: {
-          common: {
-            pk: new NumberField({}),
-          },
-          receive: {},
-          send: {},
+    const childRes = new TestResource({
+      basename: "child",
+      objects: {},
+      fields: {
+        common: {
+          pk: new NumberField({}),
         },
-        pkField: "pk",
-      }
-    );
+        receive: {},
+        send: {},
+      },
+      pkField: "pk",
+    });
 
-    const parentRes = new TestResource(
-      "parent",
-      {},
-      {
-        fields: {
-          common: {
-            pk: new NumberField({}),
-            date: new DateField({}),
-            child: new childRes.Field({}),
-          },
-          receive: {},
-          send: {},
+    const parentRes = new TestResource({
+      basename: "parent",
+      objects: {},
+      fields: {
+        common: {
+          pk: new NumberField({}),
+          date: new DateField({}),
+          child: new childRes.Field({}),
         },
-        pkField: 'pk',
-        getters: {
-          pkPlusOne: (data) => data.pk + 1,
-        },
-      }
-    );
+        receive: {},
+        send: {},
+      },
+      pkField: "pk",
+      getters: {
+        pkPlusOne: (data) => data.pk + 1,
+      },
+    });
 
     describe(`#${parentRes.Field.name}`, function () {
       describe(`#${parentRes.field.toInternal.name}()`, function () {

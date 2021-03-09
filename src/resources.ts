@@ -69,18 +69,34 @@ export abstract class BaseResource<
   Getters extends GettersDesc<Fields>,
   F extends Field
 > {
+  readonly basename;
+  readonly objects;
+  readonly fields;
+  readonly pkField;
+  readonly getters;
+
   readonly Field;
   protected readonly field;
 
-  constructor(
-    readonly basename: string,
-    readonly objects: Record<PK, Data<Fields, Getters>>,
-    readonly description: {
-      fields: Fields;
-      pkField: PKField;
-      getters?: Getters;
-    }
-  ) {
+  constructor({
+    basename,
+    objects,
+    fields,
+    pkField,
+    getters,
+  }: {
+    basename: string;
+    objects: Record<PK, Data<Fields, Getters>>;
+    fields: Fields;
+    pkField: PKField;
+    getters?: Getters;
+  }) {
+    this.basename = basename;
+    this.objects = objects;
+    this.fields = fields;
+    this.pkField = pkField;
+    this.getters = getters;
+
     this.Field = this.buildField();
     this.field = new this.Field({}) as InstanceType<
       BaseResource<Fields, PKField, Getters, F>["Field"]
@@ -98,9 +114,7 @@ export abstract class BaseResource<
   }
 
   protected getPK(value: FieldsValues<Fields>["internal"] | PK) {
-    return typeof value == "object"
-      ? (value[this.description.pkField] as PK)
-      : value;
+    return typeof value == "object" ? (value[this.pkField] as PK) : value;
   }
 
   protected matchFields<K extends string, V, R>(
@@ -120,11 +134,11 @@ export abstract class BaseResource<
     // value
     type V = Data<Fields, Getters>;
     const fields = {
-      ...this.description.fields.common,
-      ...this.description.fields.receive,
-      ...this.description.fields.send,
+      ...this.fields.common,
+      ...this.fields.receive,
+      ...this.fields.send,
     };
-    const getters = this.description.getters;
+    const getters = this.getters;
     const processed = {};
     for (const k in data) {
       Object.defineProperty(processed, k, {
@@ -165,7 +179,7 @@ export abstract class BaseResource<
         this.objects[pk] = data;
       } else {
         Object.entries(data).forEach(([k, v]) => {
-          if (this.description.getters && k in this.description.getters) return;
+          if (this.getters && k in this.getters) return;
           this.objects[pk][k as keyof V] = v as V[keyof V];
         });
       }
@@ -200,8 +214,8 @@ export abstract class BaseResource<
             resource.matchFields(
               value,
               {
-                ...resource.description.fields.common,
-                ...resource.description.fields.receive,
+                ...resource.fields.common,
+                ...resource.fields.receive,
               },
               (k, v, field) =>
                 this.handleValidationError(
@@ -220,8 +234,8 @@ export abstract class BaseResource<
         return resource.matchFields(
           value,
           {
-            ...resource.description.fields.common,
-            ...resource.description.fields.send,
+            ...resource.fields.common,
+            ...resource.fields.send,
           },
           (k, v, field) =>
             this.handleValidationError(
@@ -236,9 +250,9 @@ export abstract class BaseResource<
         resource.matchFields(
           value,
           {
-            ...resource.description.fields.common,
-            ...resource.description.fields.receive,
-            ...resource.description.fields.send,
+            ...resource.fields.common,
+            ...resource.fields.receive,
+            ...resource.fields.send,
           },
           (k, v, field) => field.runAllValidations(v)
         );
