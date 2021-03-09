@@ -18,9 +18,16 @@ export interface FieldsOptions<F extends Field = Field>
 export interface GettersOptions<Fields extends FieldsOptions>
   extends Record<string, (data: FieldsValues<Fields>["internal"]) => unknown> {}
 
-export type PKFieldOptions<
-  Fields extends FieldsOptions
-> = keyof (Fields["common"] & Fields["receive"]);
+export interface ResourceOptions<
+  Fields extends FieldsOptions,
+  Getters extends GettersOptions<Fields>
+> {
+  basename: string;
+  objects: Record<PK, Data<Fields, Getters>>;
+  fields: Fields;
+  pkField: keyof (Fields["common"] & Fields["receive"]);
+  getters?: Getters;
+}
 
 export type FieldsValues<Fields extends FieldsOptions> = {
   toReceive: {
@@ -53,7 +60,6 @@ export type Data<
 
 export type ResData<Res> = Res extends BaseResource<
   infer Fields,
-  infer PKField,
   infer Getters,
   infer F
 >
@@ -62,7 +68,6 @@ export type ResData<Res> = Res extends BaseResource<
 
 export abstract class BaseResource<
   Fields extends FieldsOptions<F>,
-  PKField extends PKFieldOptions<Fields>,
   Getters extends GettersOptions<Fields>,
   F extends Field
 > {
@@ -81,13 +86,7 @@ export abstract class BaseResource<
     fields,
     pkField,
     getters,
-  }: {
-    basename: string;
-    objects: Record<PK, Data<Fields, Getters>>;
-    fields: Fields;
-    pkField: PKField;
-    getters?: Getters;
-  }) {
+  }: ResourceOptions<Fields, Getters>) {
     this.basename = basename;
     this.objects = objects;
     this.fields = fields;
@@ -96,7 +95,7 @@ export abstract class BaseResource<
 
     this.Field = this.buildField();
     this.field = new this.Field({}) as InstanceType<
-      BaseResource<Fields, PKField, Getters, F>["Field"]
+      BaseResource<Fields, Getters, F>["Field"]
     >;
   }
 
@@ -278,10 +277,9 @@ export abstract class BaseResource<
 
 export abstract class SimpleResource<
   Fields extends FieldsOptions<F>,
-  PKField extends PKFieldOptions<Fields>,
   Getters extends GettersOptions<Fields>,
   F extends Field
-> extends BaseResource<Fields, PKField, Getters, F> {
+> extends BaseResource<Fields, Getters, F> {
   protected abstract readonly axios: AxiosInstance;
   protected readonly cases?: Record<
     "internal" | "external",

@@ -7,7 +7,6 @@ import {
   FieldsOptions,
   GettersOptions,
   NumberField,
-  PKFieldOptions,
   Values,
 } from "../src";
 
@@ -15,11 +14,10 @@ describe("Resources", function () {
   describe(BaseResource.name, function () {
     class TestResource<
       Fields extends FieldsOptions<F>,
-      PKField extends PKFieldOptions<Fields>,
       Getters extends GettersOptions<Fields>,
       F extends Field
-    > extends BaseResource<Fields, PKField, Getters, F> {
-      field!: BaseResource<Fields, PKField, Getters, F>["field"];
+    > extends BaseResource<Fields, Getters, F> {
+      field!: BaseResource<Fields, Getters, F>["field"];
 
       cases = {
         internal: Case.camel,
