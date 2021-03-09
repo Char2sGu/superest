@@ -12,15 +12,11 @@ export type PK = string | number;
  *
  * I know that this is not a perfect solution, so I will keep seeking for better ones.
  */
-export type FieldsOptions<F extends Field = Field> = Record<
-  "common" | "receive" | "send",
-  Record<string, F>
->;
+export interface FieldsOptions<F extends Field = Field>
+  extends Record<"common" | "receive" | "send", Record<string, F>> {}
 
-export type GettersOptions<Fields extends FieldsOptions> = Record<
-  string,
-  (data: FieldsValues<Fields>["internal"]) => unknown
->;
+export interface GettersOptions<Fields extends FieldsOptions>
+  extends Record<string, (data: FieldsValues<Fields>["internal"]) => unknown> {}
 
 export type PKFieldOptions<
   Fields extends FieldsOptions
