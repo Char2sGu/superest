@@ -12,20 +12,21 @@ export type PK = string | number;
  *
  * I know that this is not a perfect solution, so I will keep seeking for better ones.
  */
-export type FieldsDesc<F extends Field = Field> = Record<
+export type FieldsOptions<F extends Field = Field> = Record<
   "common" | "receive" | "send",
   Record<string, F>
 >;
 
-export type GettersDesc<Fields extends FieldsDesc> = Record<
+export type GettersOptions<Fields extends FieldsOptions> = Record<
   string,
   (data: FieldsValues<Fields>["internal"]) => unknown
 >;
 
-export type PKFieldDesc<Fields extends FieldsDesc> = keyof (Fields["common"] &
-  Fields["receive"]);
+export type PKFieldOptions<
+  Fields extends FieldsOptions
+> = keyof (Fields["common"] & Fields["receive"]);
 
-export type FieldsValues<Fields extends FieldsDesc> = {
+export type FieldsValues<Fields extends FieldsOptions> = {
   toReceive: {
     [N in keyof (Fields["common"] & Fields["receive"])]: Values<
       (Fields["common"] & Fields["receive"])[N]
@@ -49,8 +50,8 @@ export type FieldsValues<Fields extends FieldsDesc> = {
 };
 
 export type Data<
-  Fields extends FieldsDesc,
-  Getters extends GettersDesc<Fields>
+  Fields extends FieldsOptions,
+  Getters extends GettersOptions<Fields>
 > = FieldsValues<Fields>["internal"] &
   { [K in keyof Getters]: ReturnType<Getters[K]> };
 
@@ -64,9 +65,9 @@ export type ResData<Res> = Res extends BaseResource<
   : unknown;
 
 export abstract class BaseResource<
-  Fields extends FieldsDesc<F>,
-  PKField extends PKFieldDesc<Fields>,
-  Getters extends GettersDesc<Fields>,
+  Fields extends FieldsOptions<F>,
+  PKField extends PKFieldOptions<Fields>,
+  Getters extends GettersOptions<Fields>,
   F extends Field
 > {
   readonly basename;
@@ -280,9 +281,9 @@ export abstract class BaseResource<
 }
 
 export abstract class SimpleResource<
-  Fields extends FieldsDesc<F>,
-  PKField extends PKFieldDesc<Fields>,
-  Getters extends GettersDesc<Fields>,
+  Fields extends FieldsOptions<F>,
+  PKField extends PKFieldOptions<Fields>,
+  Getters extends GettersOptions<Fields>,
   F extends Field
 > extends BaseResource<Fields, PKField, Getters, F> {
   protected abstract readonly axios: AxiosInstance;

@@ -4,19 +4,19 @@ import {
   BaseResource,
   DateField,
   Field,
-  FieldsDesc,
-  GettersDesc,
+  FieldsOptions,
+  GettersOptions,
   NumberField,
-  PKFieldDesc,
+  PKFieldOptions,
   Values,
 } from "../src";
 
 describe("Resources", function () {
   describe(BaseResource.name, function () {
     class TestResource<
-      Fields extends FieldsDesc<F>,
-      PKField extends PKFieldDesc<Fields>,
-      Getters extends GettersDesc<Fields>,
+      Fields extends FieldsOptions<F>,
+      PKField extends PKFieldOptions<Fields>,
+      Getters extends GettersOptions<Fields>,
       F extends Field
     > extends BaseResource<Fields, PKField, Getters, F> {
       field!: BaseResource<Fields, PKField, Getters, F>["field"];
