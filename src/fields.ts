@@ -8,13 +8,11 @@ import {
   ValueRangeValidator,
 } from "./validators";
 
-export type Meta<
-  Extra extends Record<string, unknown> = Record<string, unknown>
-> = {
+export interface Meta extends Record<string, unknown> {
   nullable?: boolean;
   optional?: boolean;
   rules?: ((v: unknown) => true | string)[];
-} & Extra;
+}
 
 export type Values<F extends Field> = F extends Field<
   infer M,
@@ -110,11 +108,11 @@ export abstract class SimpleField<M extends Meta, V = unknown> extends Field<
 
 // TODO: generic choices
 export class StringField<
-  M extends Meta<{
+  M extends Meta & {
     minLength?: number;
     maxLength?: number;
     choices?: string[];
-  }>
+  }
 > extends SimpleField<M, string> {
   setup() {
     this.validators.push(new TypeValidator("string"));
@@ -132,7 +130,7 @@ export class StringField<
 
 // TODO: generic choices
 export class NumberField<
-  M extends Meta<{ maxValue?: number; minValue?: number; choices?: number[] }>
+  M extends Meta & { maxValue?: number; minValue?: number; choices?: number[] }
 > extends SimpleField<M, number> {
   setup() {
     this.validators.push(new TypeValidator("number"));
@@ -155,7 +153,7 @@ export class BooleanField<M extends Meta> extends SimpleField<M, boolean> {
 }
 
 export class DateField extends Field<
-  Meta<{ minValue?: Date; maxValue?: Date }>,
+  Meta & { minValue?: Date; maxValue?: Date },
   string,
   Date,
   Date,
@@ -181,7 +179,7 @@ export class DateField extends Field<
   }
 }
 
-export class ListField<M extends Meta<{ field: Field }>> extends Field<
+export class ListField<M extends Meta & { field: Field }> extends Field<
   M,
   Values<M["field"]>["toReceive"][],
   Values<M["field"]>["internal"][],
