@@ -1,6 +1,4 @@
-import { AxiosInstance, AxiosRequestConfig } from "axios";
 import { Field, Lazy, Meta, Values } from "./fields";
-import { transformCase } from "./utils";
 import { IsInstanceValidator, ValidationError } from "./validators";
 
 export type PK = string | number;
@@ -12,61 +10,51 @@ export type PK = string | number;
  *
  * I know that this is not a perfect solution, so I will keep seeking for better ones.
  */
-export type FieldsDesc<F extends Field = Field> = Record<
-  "common" | "receive" | "send",
-  Record<string, F>
->;
+export interface ResourceDescription<
+  Self extends ResourceDescription<Self, F>,
+  F extends Field = Field
+> {
+  fields: Record<"common" | "receive" | "send", Record<string, F>>;
+  pkField: keyof (Self["fields"]["common"] & Self["fields"]["receive"]);
+  getters: Record<string, (data: FieldsValues<Self>["internal"]) => unknown>;
+}
 
-export type GettersDesc<Fields extends FieldsDesc> = Record<
-  string,
-  (data: FieldsValues<Fields>["internal"]) => unknown
->;
-
-export type PKFieldDesc<Fields extends FieldsDesc> = keyof (Fields["common"] &
-  Fields["receive"]);
-
-export type FieldsValues<Fields extends FieldsDesc> = {
+export type FieldsValues<D extends ResourceDescription<D>> = {
   toReceive: {
-    [N in keyof (Fields["common"] & Fields["receive"])]: Values<
-      (Fields["common"] & Fields["receive"])[N]
+    [N in keyof (D["fields"]["common"] & D["fields"]["receive"])]: Values<
+      (D["fields"]["common"] & D["fields"]["receive"])[N]
     >["toReceive"];
   };
   internal: {
-    [N in keyof (Fields["common"] & Fields["receive"])]: Values<
-      (Fields["common"] & Fields["receive"])[N]
+    [N in keyof (D["fields"]["common"] & D["fields"]["receive"])]: Values<
+      (D["fields"]["common"] & D["fields"]["receive"])[N]
     >["internal"];
   };
   toSend: {
-    [N in keyof (Fields["common"] & Fields["send"])]: Values<
-      (Fields["common"] & Fields["send"])[N]
+    [N in keyof (D["fields"]["common"] & D["fields"]["send"])]: Values<
+      (D["fields"]["common"] & D["fields"]["send"])[N]
     >["toSend"];
   };
   external: {
-    [N in keyof (Fields["common"] & Fields["send"])]: Values<
-      (Fields["common"] & Fields["send"])[N]
+    [N in keyof (D["fields"]["common"] & D["fields"]["send"])]: Values<
+      (D["fields"]["common"] & D["fields"]["send"])[N]
     >["external"];
   };
 };
 
 export type Data<
-  Fields extends FieldsDesc,
-  Getters extends GettersDesc<Fields>
-> = FieldsValues<Fields>["internal"] &
-  { [K in keyof Getters]: ReturnType<Getters[K]> };
+  D extends ResourceDescription<D>
+> = FieldsValues<D>["internal"] &
+  {
+    [K in keyof D["getters"]]: ReturnType<D["getters"][K]>;
+  };
 
-export type ResData<Res> = Res extends BaseResource<
-  infer Fields,
-  infer PKField,
-  infer Getters,
-  infer F
->
-  ? Data<Fields, Getters>
+export type ResData<Res> = Res extends BaseResource<infer D, infer F>
+  ? Data<D>
   : unknown;
 
 export abstract class BaseResource<
-  Fields extends FieldsDesc<F>,
-  PKField extends PKFieldDesc<Fields>,
-  Getters extends GettersDesc<Fields>,
+  D extends ResourceDescription<D, F>,
   F extends Field
 > {
   readonly Field;
@@ -74,16 +62,12 @@ export abstract class BaseResource<
 
   constructor(
     readonly basename: string,
-    readonly objects: Record<PK, Data<Fields, Getters>>,
-    readonly description: {
-      fields: Fields;
-      pkField: PKField;
-      getters?: Getters;
-    }
+    readonly objects: Record<PK, Data<D>>,
+    readonly description: D
   ) {
     this.Field = this.buildField();
     this.field = new this.Field({}) as InstanceType<
-      BaseResource<Fields, PKField, Getters, F>["Field"]
+      BaseResource<D, F>["Field"]
     >;
   }
 
@@ -97,7 +81,7 @@ export abstract class BaseResource<
     return `/${this.basename}/${pk && pk + "/"}${action && action + "/"}`;
   }
 
-  protected getPK(value: FieldsValues<Fields>["internal"] | PK) {
+  protected getPK(value: FieldsValues<D>["internal"] | PK) {
     return typeof value == "object"
       ? (value[this.description.pkField] as PK)
       : value;
@@ -114,11 +98,11 @@ export abstract class BaseResource<
     return Object.fromEntries(entries) as Record<K, R>;
   }
 
-  protected commit(data: Lazy<FieldsValues<Fields>["internal"]>) {
+  protected commit(data: Lazy<FieldsValues<D>["internal"]>) {
     // define descriptors because Vue 2.x will also define descriptors on the object
     // to observe changes, which will cover the raw data and make the `Proxy` get a wrong
     // value
-    type V = Data<Fields, Getters>;
+    type V = Data<D>;
     const fields = {
       ...this.description.fields.common,
       ...this.description.fields.receive,
@@ -178,10 +162,10 @@ export abstract class BaseResource<
     // eslint-disable-next-line
     const resource = this;
 
-    type ToReceive = FieldsValues<Fields>["toReceive"] | PK;
-    type Internal = Data<Fields, Getters>;
-    type ToSend = FieldsValues<Fields>["toSend"];
-    type External = FieldsValues<Fields>["external"];
+    type ToReceive = FieldsValues<D>["toReceive"] | PK;
+    type Internal = Data<D>;
+    type ToSend = FieldsValues<D>["toSend"];
+    type External = FieldsValues<D>["external"];
 
     return class ResourceField<M extends Meta> extends Field<
       M,
@@ -265,121 +249,121 @@ export abstract class BaseResource<
   }
 }
 
-export abstract class SimpleResource<
-  Fields extends FieldsDesc<F>,
-  PKField extends PKFieldDesc<Fields>,
-  Getters extends GettersDesc<Fields>,
-  F extends Field
-> extends BaseResource<Fields, PKField, Getters, F> {
-  protected abstract readonly axios: AxiosInstance;
-  protected readonly cases?: Record<
-    "internal" | "external",
-    (v: string) => string
-  >;
+// export abstract class SimpleResource<
+//   Fields extends FieldsDesc<F>,
+//   PKField extends PKFieldDesc<Fields>,
+//   Getters extends GettersDesc<Fields>,
+//   F extends Field
+// > extends BaseResource<Fields, PKField, Getters, F> {
+//   protected abstract readonly axios: AxiosInstance;
+//   protected readonly cases?: Record<
+//     "internal" | "external",
+//     (v: string) => string
+//   >;
 
-  protected parseListResponse(data: unknown) {
-    return data as FieldsValues<Fields>["toReceive"][];
-  }
-  protected parseCreateResponse(data: unknown) {
-    return data as FieldsValues<Fields>["toReceive"];
-  }
-  protected parseRetrieveResponse(data: unknown) {
-    return data as FieldsValues<Fields>["toReceive"];
-  }
-  protected parseUpdateResponse(data: unknown) {
-    return data as FieldsValues<Fields>["toReceive"];
-  }
-  protected parsePartialUpdateResponse(data: unknown) {
-    return data as FieldsValues<Fields>["toReceive"];
-  }
+//   protected parseListResponse(data: unknown) {
+//     return data as FieldsValues<Fields>["toReceive"][];
+//   }
+//   protected parseCreateResponse(data: unknown) {
+//     return data as FieldsValues<Fields>["toReceive"];
+//   }
+//   protected parseRetrieveResponse(data: unknown) {
+//     return data as FieldsValues<Fields>["toReceive"];
+//   }
+//   protected parseUpdateResponse(data: unknown) {
+//     return data as FieldsValues<Fields>["toReceive"];
+//   }
+//   protected parsePartialUpdateResponse(data: unknown) {
+//     return data as FieldsValues<Fields>["toReceive"];
+//   }
 
-  async list(config?: AxiosRequestConfig) {
-    const response = await this.axios.get(this.getURL(), config);
-    return {
-      response,
-      data: this.parseListResponse(
-        transformCase(response.data, this.cases?.internal)
-      ).map((data) => this.field.toInternal(data)()),
-    };
-  }
+//   async list(config?: AxiosRequestConfig) {
+//     const response = await this.axios.get(this.getURL(), config);
+//     return {
+//       response,
+//       data: this.parseListResponse(
+//         transformCase(response.data, this.cases?.internal)
+//       ).map((data) => this.field.toInternal(data)()),
+//     };
+//   }
 
-  async create(
-    data: FieldsValues<Fields>["toSend"],
-    config?: AxiosRequestConfig
-  ) {
-    const response = await this.axios.post(
-      this.getURL(),
-      transformCase(this.field.toExternal(data), this.cases?.external),
-      config
-    );
-    return {
-      response,
-      data: this.field.toInternal(
-        this.parseCreateResponse(
-          transformCase(response.data, this.cases?.internal)
-        )
-      )(),
-    };
-  }
+//   async create(
+//     data: FieldsValues<Fields>["toSend"],
+//     config?: AxiosRequestConfig
+//   ) {
+//     const response = await this.axios.post(
+//       this.getURL(),
+//       transformCase(this.field.toExternal(data), this.cases?.external),
+//       config
+//     );
+//     return {
+//       response,
+//       data: this.field.toInternal(
+//         this.parseCreateResponse(
+//           transformCase(response.data, this.cases?.internal)
+//         )
+//       )(),
+//     };
+//   }
 
-  async retrieve(pk: PK, config?: AxiosRequestConfig) {
-    const response = await this.axios.get(this.getURL(pk), config);
-    return {
-      response,
-      data: this.field.toInternal(
-        this.parseRetrieveResponse(
-          transformCase(response.data, this.cases?.internal)
-        )
-      )(),
-    };
-  }
+//   async retrieve(pk: PK, config?: AxiosRequestConfig) {
+//     const response = await this.axios.get(this.getURL(pk), config);
+//     return {
+//       response,
+//       data: this.field.toInternal(
+//         this.parseRetrieveResponse(
+//           transformCase(response.data, this.cases?.internal)
+//         )
+//       )(),
+//     };
+//   }
 
-  async update(
-    pk: PK,
-    data: FieldsValues<Fields>["toSend"],
-    config?: AxiosRequestConfig
-  ) {
-    const response = await this.axios.put(
-      this.getURL(pk),
-      this.field.toExternal(data),
-      config
-    );
-    return {
-      response,
-      data: this.field.toInternal(
-        this.parseUpdateResponse(
-          transformCase(response.data, this.cases?.internal)
-        )
-      )(),
-    };
-  }
+//   async update(
+//     pk: PK,
+//     data: FieldsValues<Fields>["toSend"],
+//     config?: AxiosRequestConfig
+//   ) {
+//     const response = await this.axios.put(
+//       this.getURL(pk),
+//       this.field.toExternal(data),
+//       config
+//     );
+//     return {
+//       response,
+//       data: this.field.toInternal(
+//         this.parseUpdateResponse(
+//           transformCase(response.data, this.cases?.internal)
+//         )
+//       )(),
+//     };
+//   }
 
-  async partialUpdate(
-    pk: PK,
-    data: Partial<FieldsValues<Fields>["toSend"]>,
-    config?: AxiosRequestConfig
-  ) {
-    const response = await this.axios.patch(
-      this.getURL(pk),
-      transformCase(
-        this.field.toExternal(data as Required<typeof data>),
-        this.cases?.external
-      ),
-      config
-    );
-    return {
-      response,
-      data: this.field.toInternal(
-        this.parsePartialUpdateResponse(
-          transformCase(response.data, this.cases?.internal)
-        )
-      )(),
-    };
-  }
+//   async partialUpdate(
+//     pk: PK,
+//     data: Partial<FieldsValues<Fields>["toSend"]>,
+//     config?: AxiosRequestConfig
+//   ) {
+//     const response = await this.axios.patch(
+//       this.getURL(pk),
+//       transformCase(
+//         this.field.toExternal(data as Required<typeof data>),
+//         this.cases?.external
+//       ),
+//       config
+//     );
+//     return {
+//       response,
+//       data: this.field.toInternal(
+//         this.parsePartialUpdateResponse(
+//           transformCase(response.data, this.cases?.internal)
+//         )
+//       )(),
+//     };
+//   }
 
-  async destroy(pk: PK, config?: AxiosRequestConfig) {
-    const response = await this.axios.delete(this.getURL(pk), config);
-    delete this.objects[pk];
-    return { response };
-  }
-}
+//   async destroy(pk: PK, config?: AxiosRequestConfig) {
+//     const response = await this.axios.delete(this.getURL(pk), config);
+//     delete this.objects[pk];
+//     return { response };
+//   }
+// }
