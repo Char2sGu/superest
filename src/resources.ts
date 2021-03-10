@@ -138,10 +138,10 @@ export abstract class BaseResource<
     const processed = {};
     for (const k in data) {
       Object.defineProperty(processed, k, {
-        get: data[k],
+        get: () => data[k](),
         set: (v) => {
           fields[k].runAllValidations(v);
-          data[k as keyof typeof data] = v;
+          data[k as keyof typeof data] = () => v;
         },
         configurable: true,
         enumerable: true,
