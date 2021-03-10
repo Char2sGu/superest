@@ -9,7 +9,7 @@ import {
 import assert from "assert";
 
 describe("Validators", function () {
-  describe(LengthValidator.name, function () {
+  describe(`#${LengthValidator.name}`, function () {
     const max = 5;
     const min = 3;
     const validator = new LengthValidator({ max, min });
@@ -35,7 +35,7 @@ describe("Validators", function () {
     });
   });
 
-  describe(ValueRangeValidator.name, function () {
+  describe(`#${ValueRangeValidator.name}`, function () {
     const max = 5;
     const min = 3;
     const validator = new ValueRangeValidator({ max, min });
@@ -55,7 +55,7 @@ describe("Validators", function () {
     });
   });
 
-  describe(IsInstanceValidator.name, function () {
+  describe(`#${IsInstanceValidator.name}`, function () {
     describe("Single Target", function () {
       class Cls {}
       const instance = new Cls();
@@ -88,7 +88,7 @@ describe("Validators", function () {
     });
   });
 
-  describe(TypeValidator.name, function () {
+  describe(`#${TypeValidator.name}`, function () {
     describe("Single Type", function () {
       const value = "";
       const type = typeof value;
@@ -118,7 +118,7 @@ describe("Validators", function () {
     });
   });
 
-  describe(ChoicesValidator.name, function () {
+  describe(`#${ChoicesValidator.name}`, function () {
     const choices = ["1", 1, true];
     const validator = new ChoicesValidator(...choices);
 

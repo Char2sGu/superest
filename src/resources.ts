@@ -1,9 +1,9 @@
-import { AxiosInstance, AxiosRequestConfig } from "axios";
 import { Field, Lazy, Meta, Values } from "./fields";
-import { transformCase } from "./utils";
 import { IsInstanceValidator, ValidationError } from "./validators";
 
 export type PK = string | number;
+
+export type NonPromise<T> = T extends Promise<infer R> ? R : T;
 
 /**
  * The generic type `F` here is used to get the detailed literal types of the fields' meta.
@@ -18,14 +18,28 @@ export interface FieldsOptions<F extends Field = Field>
 export interface GettersOptions<Fields extends FieldsOptions>
   extends Record<string, (data: FieldsValues<Fields>["internal"]) => unknown> {}
 
+export interface ActionsOptions<Fields extends FieldsOptions>
+  extends Record<
+    string,
+    (
+      ...args: any[]
+    ) => Promise<{
+      data?:
+        | FieldsValues<Fields>["toReceive"]
+        | FieldsValues<Fields>["toReceive"][];
+    }>
+  > {}
+
 export interface ResourceOptions<
   Fields extends FieldsOptions,
-  Getters extends GettersOptions<Fields>
+  Getters extends GettersOptions<Fields>,
+  Actions extends ActionsOptions<Fields>
 > {
   basename: string;
   objects: Record<PK, Data<Fields, Getters>>;
   fields: Fields;
   pkField: keyof (Fields["common"] & Fields["receive"]);
+  actions: Actions;
   getters?: Getters;
 }
 
@@ -58,17 +72,19 @@ export type Data<
 > = FieldsValues<Fields>["internal"] &
   { [K in keyof Getters]: ReturnType<Getters[K]> };
 
-export type ResData<Res> = Res extends BaseResource<
+export type ResData<Res> = Res extends Resource<
   infer Fields,
   infer Getters,
+  infer Actions,
   infer F
 >
   ? Data<Fields, Getters>
   : unknown;
 
-export abstract class BaseResource<
+export class Resource<
   Fields extends FieldsOptions<F>,
   Getters extends GettersOptions<Fields>,
+  Actions extends ActionsOptions<Fields>,
   F extends Field
 > {
   readonly basename;
@@ -76,9 +92,12 @@ export abstract class BaseResource<
   readonly fields;
   readonly pkField;
   readonly getters;
+  readonly actions;
 
   readonly Field;
-  protected readonly field;
+  protected readonly field: InstanceType<
+    Resource<Fields, Getters, Actions, F>["Field"]
+  >;
 
   constructor({
     basename,
@@ -86,17 +105,16 @@ export abstract class BaseResource<
     fields,
     pkField,
     getters,
-  }: ResourceOptions<Fields, Getters>) {
+    actions,
+  }: ResourceOptions<Fields, Getters, Actions>) {
     this.basename = basename;
     this.objects = objects;
     this.fields = fields;
     this.pkField = pkField;
     this.getters = getters;
-
+    this.actions = this.buildActions(actions);
     this.Field = this.buildField();
-    this.field = new this.Field({}) as InstanceType<
-      BaseResource<Fields, Getters, F>["Field"]
-    >;
+    this.field = new this.Field({});
   }
 
   clearObjects() {
@@ -183,6 +201,44 @@ export abstract class BaseResource<
       }
     };
     return save(processed as V);
+  }
+
+  protected buildActions(rawActions: Actions) {
+    type Ret<N extends keyof Actions> = NonPromise<ReturnType<Actions[N]>>;
+    type ToReceive = FieldsValues<Fields>["toReceive"];
+
+    return (Object.fromEntries(
+      Object.entries(rawActions).map(([k, fn]) => [
+        k,
+        async (...args: any[]) => {
+          const { data, ...rest } = await fn(...args);
+          if (data)
+            if (data instanceof Array)
+              return {
+                ...rest,
+                data: data.map((data) => this.field.toInternal(data)()),
+              };
+            else
+              return {
+                ...rest,
+                data: this.field.toInternal(data)(),
+              };
+          return { ...rest, data };
+        },
+      ])
+    ) as unknown) as {
+      [N in keyof Actions]: (
+        ...args: Parameters<Actions[N]>
+      ) => Promise<
+        Omit<Ret<N>, "data"> & {
+          data: Ret<N>["data"] extends ToReceive[]
+            ? Data<Fields, Getters>[]
+            : Ret<N>["data"] extends ToReceive
+            ? Data<Fields, Getters>
+            : undefined;
+        }
+      >;
+    };
   }
 
   protected buildField() {
@@ -273,123 +329,5 @@ export abstract class BaseResource<
         };
       }
     };
-  }
-}
-
-export abstract class SimpleResource<
-  Fields extends FieldsOptions<F>,
-  Getters extends GettersOptions<Fields>,
-  F extends Field
-> extends BaseResource<Fields, Getters, F> {
-  protected abstract readonly axios: AxiosInstance;
-  protected readonly cases?: Record<
-    "internal" | "external",
-    (v: string) => string
-  >;
-
-  protected parseListResponse(data: unknown) {
-    return data as FieldsValues<Fields>["toReceive"][];
-  }
-  protected parseCreateResponse(data: unknown) {
-    return data as FieldsValues<Fields>["toReceive"];
-  }
-  protected parseRetrieveResponse(data: unknown) {
-    return data as FieldsValues<Fields>["toReceive"];
-  }
-  protected parseUpdateResponse(data: unknown) {
-    return data as FieldsValues<Fields>["toReceive"];
-  }
-  protected parsePartialUpdateResponse(data: unknown) {
-    return data as FieldsValues<Fields>["toReceive"];
-  }
-
-  async list(config?: AxiosRequestConfig) {
-    const response = await this.axios.get(this.getURL(), config);
-    return {
-      response,
-      data: this.parseListResponse(
-        transformCase(response.data, this.cases?.internal)
-      ).map((data) => this.field.toInternal(data)()),
-    };
-  }
-
-  async create(
-    data: FieldsValues<Fields>["toSend"],
-    config?: AxiosRequestConfig
-  ) {
-    const response = await this.axios.post(
-      this.getURL(),
-      transformCase(this.field.toExternal(data), this.cases?.external),
-      config
-    );
-    return {
-      response,
-      data: this.field.toInternal(
-        this.parseCreateResponse(
-          transformCase(response.data, this.cases?.internal)
-        )
-      )(),
-    };
-  }
-
-  async retrieve(pk: PK, config?: AxiosRequestConfig) {
-    const response = await this.axios.get(this.getURL(pk), config);
-    return {
-      response,
-      data: this.field.toInternal(
-        this.parseRetrieveResponse(
-          transformCase(response.data, this.cases?.internal)
-        )
-      )(),
-    };
-  }
-
-  async update(
-    pk: PK,
-    data: FieldsValues<Fields>["toSend"],
-    config?: AxiosRequestConfig
-  ) {
-    const response = await this.axios.put(
-      this.getURL(pk),
-      this.field.toExternal(data),
-      config
-    );
-    return {
-      response,
-      data: this.field.toInternal(
-        this.parseUpdateResponse(
-          transformCase(response.data, this.cases?.internal)
-        )
-      )(),
-    };
-  }
-
-  async partialUpdate(
-    pk: PK,
-    data: Partial<FieldsValues<Fields>["toSend"]>,
-    config?: AxiosRequestConfig
-  ) {
-    const response = await this.axios.patch(
-      this.getURL(pk),
-      transformCase(
-        this.field.toExternal(data as Required<typeof data>),
-        this.cases?.external
-      ),
-      config
-    );
-    return {
-      response,
-      data: this.field.toInternal(
-        this.parsePartialUpdateResponse(
-          transformCase(response.data, this.cases?.internal)
-        )
-      )(),
-    };
-  }
-
-  async destroy(pk: PK, config?: AxiosRequestConfig) {
-    const response = await this.axios.delete(this.getURL(pk), config);
-    delete this.objects[pk];
-    return { response };
   }
 }

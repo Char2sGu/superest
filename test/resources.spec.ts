@@ -1,132 +1,156 @@
 import assert from "assert";
-import Case from "case";
-import {
-  BaseResource,
-  DateField,
-  Field,
-  FieldsOptions,
-  GettersOptions,
-  NumberField,
-  Values,
-} from "../src";
+import { DateField, NumberField, Resource, ValidationError } from "../src";
 
 describe("Resources", function () {
-  describe(BaseResource.name, function () {
-    class TestResource<
-      Fields extends FieldsOptions<F>,
-      Getters extends GettersOptions<Fields>,
-      F extends Field
-    > extends BaseResource<Fields, Getters, F> {
-      field!: BaseResource<Fields, Getters, F>["field"];
-
-      cases = {
-        internal: Case.camel,
-        external: Case.snake,
-      };
-    }
-
-    const childRes = new TestResource({
-      basename: "child",
+  describe(`#${Resource.name}`, function () {
+    const resource = new Resource({
+      basename: "",
       objects: {},
       fields: {
         common: {
-          pk: new NumberField({}),
-        },
-        receive: {},
-        send: {},
-      },
-      pkField: "pk",
-    });
-
-    const parentRes = new TestResource({
-      basename: "parent",
-      objects: {},
-      fields: {
-        common: {
-          pk: new NumberField({}),
           date: new DateField({}),
-          child: new childRes.Field({}),
         },
-        receive: {},
+        receive: {
+          id: new NumberField({}),
+        },
         send: {},
       },
-      pkField: "pk",
+      pkField: "id",
       getters: {
-        pkPlusOne: (data) => data.pk + 1,
+        idGetter: (data) => data.id,
+      },
+      actions: {
+        async retrieve(id: number) {
+          return {
+            data: {
+              id,
+              date: new Date().toISOString(),
+            },
+          };
+        },
+
+        async list(id: number) {
+          return {
+            data: [
+              {
+                id,
+                date: new Date().toISOString(),
+              },
+            ],
+          };
+        },
       },
     });
 
-    describe(`#${parentRes.Field.name}`, function () {
-      describe(`#${parentRes.field.toInternal.name}()`, function () {
-        const data: Values<typeof parentRes.field>["toReceive"] = {
-          pk: 1,
-          date: new Date().toISOString(),
-          child: { pk: 2 },
-        };
-        let internal: ReturnType<ReturnType<typeof parentRes.field.toInternal>>;
+    describe(`#${resource.Field.name}`, function () {
+      const field = new resource.Field({});
 
-        before(function () {
-          internal = parentRes.field.toInternal(data)();
-        });
-
-        it("data are saved to corresponding resource", function () {
-          assert(internal.pk in parentRes.objects);
-          assert(internal.child.pk in childRes.objects);
-        });
-
-        it("getters should returns the proper values", function () {
-          assert.strictEqual(internal.pkPlusOne, data.pk + 1);
-        });
-
-        it("saved data should be referenced properly", function () {
-          assert.strictEqual(
-            parentRes.field.toInternal(internal.pk)(),
-            internal
+      describe(`#${field.validate.name}()`, function () {
+        it("should throw an validation error when some of the fields are illegal", function () {
+          assert.throws(
+            () =>
+              field.validate({
+                date: null,
+              }),
+            ValidationError
           );
+        });
+
+        it("should pass when all the fields are legal", function () {
+          field.validate({
+            date: new Date(),
+          });
+        });
+      });
+
+      describe(`#${field.toInternalValue.name}()`, function () {
+        const id = 1;
+        const date = new Date();
+
+        const internal = field.toInternalValue({
+          id,
+          date: date.toISOString(),
+        })();
+
+        it("data should be saved", function () {
+          assert.strictEqual(resource.objects[internal.id], internal);
+        });
+
+        it("fields should be processed to internal", function () {
+          assert.strictEqual(internal.date.constructor, Date);
+        });
+
+        it("getters should work", function () {
+          assert.strictEqual(internal.idGetter, internal.id);
+        });
+
+        it("saved data can be referenced when passed a primary key", function () {
+          assert.strictEqual(field.toInternalValue(internal.id)(), internal);
+        });
+
+        it("save again should update the data but not change the reference", function () {
+          const date = new Date();
+          const ret = field.toInternalValue({
+            id,
+            date: date.toISOString(),
+          })();
+          assert.strictEqual(ret, resource.objects[id], "reference changed");
           assert.strictEqual(
-            childRes.field.toInternal(internal.child.pk)(),
-            internal.child
+            internal.date.toISOString(),
+            date.toISOString(),
+            "data is not updated"
           );
+        });
+      });
+
+      describe(`#${field.toExternalValue.name}()`, function () {
+        const date = new Date();
+
+        const external = field.toExternalValue({ date });
+
+        it("data should be processed to external data", function () {
+          assert.strictEqual(external.date, date.toISOString());
+        });
+      });
+
+      describe(`Actions`, function () {
+        it("returns a single data object", async function () {
+          const id = 1;
+          const { data } = await resource.actions.retrieve(id);
+          assert.strictEqual(data, resource.objects[id]);
+        });
+
+        it("returns a list of data objects", async function () {
+          const id = 2;
+          const { data } = await resource.actions.list(id);
+          assert.strictEqual(data[0], resource.objects[id]);
         });
       });
     });
 
-    describe(`#${parentRes.clearObjects.name}()`, function () {
-      before(function () {
-        parentRes.clearObjects();
-      });
-
-      it("objects should be empty", function () {
-        assert.strictEqual(Object.keys(parentRes.objects).length, 0);
-      });
-    });
-
-    describe(`#${parentRes.getURL.name}()`, function () {
+    describe(`#${resource.getURL.name}()`, function () {
       const pk = 1;
       const action = "action";
 
-      it("return root url when passed no args", function () {
-        assert.strictEqual(parentRes.getURL(), `/${parentRes.basename}/`);
+      it("should return the root url when passed no args", function () {
+        assert.strictEqual(resource.getURL(), `/${resource.basename}/`);
       });
 
-      it("return obj url when passed pk", function () {
+      it("should return the obj url when passed pk only", function () {
+        assert.strictEqual(resource.getURL(1), `/${resource.basename}/${pk}/`);
+      });
+
+      it("should return the obj url with action when passed both pk and action", function () {
         assert.strictEqual(
-          parentRes.getURL(1),
-          `/${parentRes.basename}/${pk}/`
+          resource.getURL(1, action),
+          `/${resource.basename}/${pk}/${action}/`
         );
       });
 
-      it("return obj url with action when passed both pk and action", function () {
+      it("should return the root url with action when passed action only", function () {
         assert.strictEqual(
-          parentRes.getURL(1, action),
-          `/${parentRes.basename}/${pk}/${action}/`
-        );
-      });
-
-      it("return root url with action when passed action", function () {
-        assert.strictEqual(
-          parentRes.getURL(undefined, action),
-          `/${parentRes.basename}/${action}/`
+          resource.getURL(undefined, action),
+          `/${resource.basename}/${action}/`
         );
       });
     });
