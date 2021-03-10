@@ -173,13 +173,14 @@ export abstract class BaseResource<
 
       if (!this.objects[pk]) {
         this.objects[pk] = data;
+        return data;
       } else {
         Object.entries(data).forEach(([k, v]) => {
           if (this.getters && k in this.getters) return;
           this.objects[pk][k as keyof V] = v as V[keyof V];
         });
+        return this.objects[pk];
       }
-      return data;
     };
     return save(processed as V);
   }
