@@ -89,13 +89,13 @@ export class Resource<
 > {
   readonly basename;
   readonly objects;
-  readonly fields;
-  readonly pkField;
-  readonly getters;
+  protected readonly fields;
+  protected readonly pkField;
+  protected readonly getters;
   readonly actions;
 
   readonly Field;
-  protected readonly asField: InstanceType<
+  readonly asField: InstanceType<
     Resource<Fields, Getters, Actions, F>["Field"]
   >;
 
