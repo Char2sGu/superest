@@ -95,7 +95,7 @@ export class Resource<
   readonly actions;
 
   readonly Field;
-  protected readonly field: InstanceType<
+  protected readonly asField: InstanceType<
     Resource<Fields, Getters, Actions, F>["Field"]
   >;
 
@@ -114,7 +114,7 @@ export class Resource<
     this.getters = getters;
     this.actions = this.buildActions(actions);
     this.Field = this.buildField();
-    this.field = new this.Field({});
+    this.asField = new this.Field({});
   }
 
   clearObjects() {
@@ -216,12 +216,12 @@ export class Resource<
             if (data instanceof Array)
               return {
                 ...rest,
-                data: data.map((data) => this.field.toInternal(data)()),
+                data: data.map((data) => this.asField.toInternal(data)()),
               };
             else
               return {
                 ...rest,
-                data: this.field.toInternal(data)(),
+                data: this.asField.toInternal(data)(),
               };
           return { ...rest, data };
         },
