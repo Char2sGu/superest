@@ -142,10 +142,21 @@ export class Resource<
     return Object.fromEntries(entries) as Record<K, R>;
   }
 
-  protected commit(data: Lazy<FieldsValues<Fields>["internal"]>) {
+  protected commit(
+    data: Lazy<FieldsValues<Fields>["internal"]>
+  ): Data<Fields, Getters>;
+  protected commit(
+    data: Lazy<FieldsValues<Fields>["internal"]>[]
+  ): Data<Fields, Getters>[];
+  protected commit(
+    data:
+      | Lazy<FieldsValues<Fields>["internal"]>
+      | Lazy<FieldsValues<Fields>["internal"]>[]
+  ) {
     // define descriptors because Vue 2.x will also define descriptors on the object
     // to observe changes, which will cover the raw data and make the `Proxy` get a wrong
     // value
+    if (data instanceof Array) return data.map((data) => this.commit(data));
     type V = Data<Fields, Getters>;
     const fields = {
       ...this.fields.common,
