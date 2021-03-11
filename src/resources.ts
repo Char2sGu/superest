@@ -5,6 +5,12 @@ export type PK = string | number;
 
 export type NonPromise<T> = T extends Promise<infer R> ? R : T;
 
+export interface Action<
+  Res extends Resource<any, any, any, any> = Resource<any, any, any, any>
+> {
+  (resource: Res): Function;
+}
+
 /**
  * The generic type `F` here is used to get the detailed literal types of the fields' meta.
  * When `F` is not set as a generic type, literal types such as `true` or `"a string"` will be replaced to
@@ -18,22 +24,16 @@ export interface FieldsOptions<F extends Field = Field>
 export interface GettersOptions<Fields extends FieldsOptions>
   extends Record<string, (data: FieldsValues<Fields>["internal"]) => unknown> {}
 
-export interface ActionsOptions<Fields extends FieldsOptions>
-  extends Record<
-    string,
-    (
-      ...args: any[]
-    ) => Promise<{
-      data?:
-        | FieldsValues<Fields>["toReceive"]
-        | FieldsValues<Fields>["toReceive"][];
-    }>
-  > {}
+export interface ActionsOptions<
+  Fields extends FieldsOptions,
+  Getters extends GettersOptions<Fields>,
+  Actions extends ActionsOptions<Fields, Getters, Actions>
+> extends Record<string, Action<Resource<Fields, Getters, Actions, Field>>> {}
 
 export interface ResourceOptions<
   Fields extends FieldsOptions,
   Getters extends GettersOptions<Fields>,
-  Actions extends ActionsOptions<Fields>
+  Actions extends ActionsOptions<Fields, Getters, Actions>
 > {
   basename: string;
   objects: Record<PK, Data<Fields, Getters>>;
@@ -84,7 +84,7 @@ export type ResData<Res> = Res extends Resource<
 export class Resource<
   Fields extends FieldsOptions<F>,
   Getters extends GettersOptions<Fields>,
-  Actions extends ActionsOptions<Fields>,
+  Actions extends ActionsOptions<Fields, Getters, Actions>,
   F extends Field
 > {
   readonly basename;
@@ -112,7 +112,9 @@ export class Resource<
     this.fields = fields;
     this.pkField = pkField;
     this.getters = getters;
-    this.actions = this.buildActions(actions);
+    this.actions = Object.fromEntries(
+      Object.entries(actions).map(([name, build]) => [name, build(this)])
+    ) as { [N in keyof Actions]: ReturnType<Actions[N]> };
     this.Field = this.buildField();
     this.asField = new this.Field({});
   }
@@ -212,44 +214,6 @@ export class Resource<
       }
     };
     return save(processed as V);
-  }
-
-  protected buildActions(rawActions: Actions) {
-    type Ret<N extends keyof Actions> = NonPromise<ReturnType<Actions[N]>>;
-    type ToReceive = FieldsValues<Fields>["toReceive"];
-
-    return (Object.fromEntries(
-      Object.entries(rawActions).map(([k, fn]) => [
-        k,
-        async (...args: any[]) => {
-          const { data, ...rest } = await fn(...args);
-          if (data)
-            if (data instanceof Array)
-              return {
-                ...rest,
-                data: data.map((data) => this.asField.toInternal(data)()),
-              };
-            else
-              return {
-                ...rest,
-                data: this.asField.toInternal(data)(),
-              };
-          return { ...rest, data };
-        },
-      ])
-    ) as unknown) as {
-      [N in keyof Actions]: (
-        ...args: Parameters<Actions[N]>
-      ) => Promise<
-        Omit<Ret<N>, "data"> & {
-          data: Ret<N>["data"] extends ToReceive[]
-            ? Data<Fields, Getters>[]
-            : Ret<N>["data"] extends ToReceive
-            ? Data<Fields, Getters>
-            : undefined;
-        }
-      >;
-    };
   }
 
   protected buildField() {

@@ -20,23 +20,23 @@ describe("Resources", function () {
         idGetter: (data) => data.id,
       },
       actions: {
-        async retrieve(id: number) {
-          return {
-            data: {
+        retrieve(resource) {
+          return async (id: number) => {
+            return resource.asField.toInternal({
               id,
               date: new Date().toISOString(),
-            },
+            })();
           };
         },
 
-        async list(id: number) {
-          return {
-            data: [
+        list(resource) {
+          return async (id: number) => {
+            return [
               {
                 id,
                 date: new Date().toISOString(),
               },
-            ],
+            ].map((v) => resource.asField.toInternal(v)());
           };
         },
       },
@@ -116,13 +116,13 @@ describe("Resources", function () {
       describe(`Actions`, function () {
         it("returns a single data object", async function () {
           const id = 1;
-          const { data } = await resource.actions.retrieve(id);
+          const data = await resource.actions.retrieve(id);
           assert.strictEqual(data, resource.objects[id]);
         });
 
         it("returns a list of data objects", async function () {
           const id = 2;
-          const { data } = await resource.actions.list(id);
+          const data = await resource.actions.list(id);
           assert.strictEqual(data[0], resource.objects[id]);
         });
       });
