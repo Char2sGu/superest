@@ -22,9 +22,9 @@ export type Values<F extends Field> = F extends Field<
   infer VE
 >
   ? {
-      toReceive: M["nullable"] extends true ? VR | null : VR;
+      rawInternal: M["nullable"] extends true ? VR | null : VR;
       internal: M["nullable"] extends true ? VI | null : VI;
-      toSend: M["optional"] extends true ? VS | undefined : VS;
+      rawExternal: M["optional"] extends true ? VS | undefined : VS;
       external: M["optional"] extends true ? VE | undefined : VE;
     }
   : unknown;
@@ -181,20 +181,20 @@ export class DateField extends Field<
 
 export class ListField<M extends Meta & { field: Field }> extends Field<
   M,
-  Values<M["field"]>["toReceive"][],
+  Values<M["field"]>["rawInternal"][],
   Values<M["field"]>["internal"][],
-  Values<M["field"]>["toSend"][],
+  Values<M["field"]>["rawExternal"][],
   Values<M["field"]>["external"][]
 > {
   setup() {
     this.validators.push(new IsInstanceValidator(Array));
   }
 
-  toInternalValue(value: Values<M["field"]>["toReceive"][]) {
+  toInternalValue(value: Values<M["field"]>["rawInternal"][]) {
     const ret = value.map((v) => this.meta.field.toInternal(v));
     return () => ret.map((v) => v()) as Values<M["field"]>["internal"][];
   }
-  toExternalValue(value: Values<M["field"]>["toSend"][]) {
+  toExternalValue(value: Values<M["field"]>["rawExternal"][]) {
     return value.map((v) => this.meta.field.toExternal(v)) as Values<
       M["field"]
     >["external"][];

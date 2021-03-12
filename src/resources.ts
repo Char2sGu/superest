@@ -44,20 +44,20 @@ export interface ResourceOptions<
 }
 
 export type FieldsValues<Fields extends FieldsOptions> = {
-  toReceive: {
+  rawInternal: {
     [N in keyof (Fields["common"] & Fields["receive"])]: Values<
       (Fields["common"] & Fields["receive"])[N]
-    >["toReceive"];
+    >["rawInternal"];
   };
   internal: {
     [N in keyof (Fields["common"] & Fields["receive"])]: Values<
       (Fields["common"] & Fields["receive"])[N]
     >["internal"];
   };
-  toSend: {
+  rawExternal: {
     [N in keyof (Fields["common"] & Fields["send"])]: Values<
       (Fields["common"] & Fields["send"])[N]
-    >["toSend"];
+    >["rawExternal"];
   };
   external: {
     [N in keyof (Fields["common"] & Fields["send"])]: Values<
@@ -220,23 +220,23 @@ export class Resource<
     // eslint-disable-next-line
     const resource = this;
 
-    type ToReceive = FieldsValues<Fields>["toReceive"] | PK;
+    type RawInternal = FieldsValues<Fields>["rawInternal"] | PK;
     type Internal = Data<Fields, Getters>;
-    type ToSend = FieldsValues<Fields>["toSend"];
+    type rawExternal = FieldsValues<Fields>["rawExternal"];
     type External = FieldsValues<Fields>["external"];
 
     return class ResourceField<M extends Meta> extends Field<
       M,
-      ToReceive,
+      RawInternal,
       Internal,
-      ToSend,
+      rawExternal,
       External
     > {
       setup() {
         this.validators.push(new IsInstanceValidator(Object));
       }
 
-      toInternalValue(value: ToReceive): () => Internal {
+      toInternalValue(value: RawInternal): () => Internal {
         if (typeof value == "object") {
           const data = resource.commit(
             resource.matchFields(
@@ -258,7 +258,7 @@ export class Resource<
           return () => resource.objects[value];
         }
       }
-      toExternalValue(value: ToSend): External {
+      toExternalValue(value: rawExternal): External {
         return resource.matchFields(
           value,
           {
