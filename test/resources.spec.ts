@@ -6,13 +6,13 @@ describe("Resources", function () {
     const resource = new Resource({
       basename: "",
       fields: {
-        common: {
+        default: {
           date: new DateField({}),
         },
-        receive: {
+        response: {
           id: new NumberField({}),
         },
-        send: {},
+        request: {},
       },
       pkField: "id",
       getters: {

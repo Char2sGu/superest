@@ -19,7 +19,7 @@ export interface Action<
  * I know that this is not a perfect solution, so I will keep seeking for better ones.
  */
 export interface FieldsOptions<F extends Field = Field>
-  extends Record<"common" | "receive" | "send", Record<string, F>> {}
+  extends Record<"default" | "response" | "request", Record<string, F>> {}
 
 export interface GettersOptions<Fields extends FieldsOptions>
   extends Record<string, (data: FieldsValues<Fields>["internal"]) => unknown> {}
@@ -38,30 +38,30 @@ export interface ResourceOptions<
   basename: string;
   objects?: Record<PK, Data<Fields, Getters>>;
   fields: Fields;
-  pkField: keyof (Fields["common"] & Fields["receive"]);
+  pkField: keyof (Fields["default"] & Fields["response"]);
   actions: Actions;
   getters?: Getters;
 }
 
 export type FieldsValues<Fields extends FieldsOptions> = {
   rawInternal: {
-    [N in keyof (Fields["common"] & Fields["receive"])]: Values<
-      (Fields["common"] & Fields["receive"])[N]
+    [N in keyof (Fields["default"] & Fields["response"])]: Values<
+      (Fields["default"] & Fields["response"])[N]
     >["rawInternal"];
   };
   internal: {
-    [N in keyof (Fields["common"] & Fields["receive"])]: Values<
-      (Fields["common"] & Fields["receive"])[N]
+    [N in keyof (Fields["default"] & Fields["response"])]: Values<
+      (Fields["default"] & Fields["response"])[N]
     >["internal"];
   };
   rawExternal: {
-    [N in keyof (Fields["common"] & Fields["send"])]: Values<
-      (Fields["common"] & Fields["send"])[N]
+    [N in keyof (Fields["default"] & Fields["request"])]: Values<
+      (Fields["default"] & Fields["request"])[N]
     >["rawExternal"];
   };
   external: {
-    [N in keyof (Fields["common"] & Fields["send"])]: Values<
-      (Fields["common"] & Fields["send"])[N]
+    [N in keyof (Fields["default"] & Fields["request"])]: Values<
+      (Fields["default"] & Fields["request"])[N]
     >["external"];
   };
 };
@@ -161,9 +161,9 @@ export class Resource<
     if (data instanceof Array) return data.map((data) => this.commit(data));
     type V = Data<Fields, Getters>;
     const fields = {
-      ...this.fields.common,
-      ...this.fields.receive,
-      ...this.fields.send,
+      ...this.fields.default,
+      ...this.fields.response,
+      ...this.fields.request,
     };
     const getters = this.getters;
     const processed = {};
@@ -242,8 +242,8 @@ export class Resource<
             resource.matchFields(
               value,
               {
-                ...resource.fields.common,
-                ...resource.fields.receive,
+                ...resource.fields.default,
+                ...resource.fields.response,
               },
               (k, v, field) =>
                 this.handleValidationError(
@@ -262,8 +262,8 @@ export class Resource<
         return resource.matchFields(
           value,
           {
-            ...resource.fields.common,
-            ...resource.fields.send,
+            ...resource.fields.default,
+            ...resource.fields.request,
           },
           (k, v, field) =>
             this.handleValidationError(
@@ -278,9 +278,9 @@ export class Resource<
         resource.matchFields(
           value,
           {
-            ...resource.fields.common,
-            ...resource.fields.receive,
-            ...resource.fields.send,
+            ...resource.fields.default,
+            ...resource.fields.response,
+            ...resource.fields.request,
           },
           (k, v, field) => field.runAllValidations(v)
         );
