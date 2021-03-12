@@ -5,7 +5,6 @@ describe("Resources", function () {
   describe(`#${Resource.name}`, function () {
     const resource = new Resource({
       basename: "",
-      objects: {},
       fields: {
         common: {
           date: new DateField({}),

@@ -36,7 +36,7 @@ export interface ResourceOptions<
   Actions extends ActionsOptions<Fields, Getters, Actions>
 > {
   basename: string;
-  objects: Record<PK, Data<Fields, Getters>>;
+  objects?: Record<PK, Data<Fields, Getters>>;
   fields: Fields;
   pkField: keyof (Fields["common"] & Fields["receive"]);
   actions: Actions;
@@ -101,7 +101,7 @@ export class Resource<
 
   constructor({
     basename,
-    objects,
+    objects = {},
     fields,
     pkField,
     getters,
