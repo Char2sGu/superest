@@ -16,15 +16,15 @@ export interface Meta extends Record<string, unknown> {
 
 export type Values<F extends Field> = F extends Field<
   infer M,
-  infer VR,
+  infer VRI,
   infer VI,
-  infer VS,
+  infer VRE,
   infer VE
 >
   ? {
-      rawInternal: M["nullable"] extends true ? VR | null : VR;
+      rawInternal: M["nullable"] extends true ? VRI | null : VRI;
       internal: M["nullable"] extends true ? VI | null : VI;
-      rawExternal: M["optional"] extends true ? VS | undefined : VS;
+      rawExternal: M["optional"] extends true ? VRE | undefined : VRE;
       external: M["optional"] extends true ? VE | undefined : VE;
     }
   : unknown;
@@ -37,10 +37,10 @@ export type NonLazy<T> = T extends Lazy<infer R> ? R : unknown;
 
 export abstract class Field<
   M extends Meta = {},
-  VR = unknown,
-  VI = VR,
-  VS = VI,
-  VE = VS
+  VRI = unknown,
+  VI = VRI,
+  VRE = VI,
+  VE = VRE
 > {
   validators: Validator[] = [];
 
@@ -52,19 +52,19 @@ export abstract class Field<
     return;
   }
 
-  abstract toInternalValue(value: VR): () => VI;
-  abstract toExternalValue(value: VS): VE;
+  abstract toInternalValue(value: VRI): () => VI;
+  abstract toExternalValue(value: VRE): VE;
 
-  toInternal(value: VR | null) {
+  toInternal(value: VRI | null) {
     type V = M["nullable"] extends true ? VI | null : VI;
     if (this.validateNull(value)) return () => value as V;
     return this.toInternalValue(value) as () => V;
   }
-  toExternal(value: VS | undefined) {
+  toExternal(value: VRE | undefined) {
     type V = M["optional"] extends true ? VE | undefined : VE;
     if (value === undefined && this.meta.optional) return value as V;
     this.runAllValidations(value);
-    return this.toExternalValue(value as VS) as V;
+    return this.toExternalValue(value as VRE) as V;
   }
 
   runAllValidations(value: unknown) {
