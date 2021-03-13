@@ -16,8 +16,7 @@
   "files": [
     "/src",
     "/dist/*",
-    "!/dist/tsconfig.tsbuildinfo",
-    "/types"
+    "!/dist/tsconfig.tsbuildinfo"
   ],
   "devDependencies": {
     "@types/mocha": "^8.2.1",
