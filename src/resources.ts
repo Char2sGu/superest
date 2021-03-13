@@ -144,13 +144,11 @@ export class Resource<
     return Object.fromEntries(entries) as Record<K, R>;
   }
 
-  protected commit(
-    data: Lazy<FieldsValues<Fields>["internal"]>
-  ): Data<Fields, Getters>;
-  protected commit(
+  commit(data: Lazy<FieldsValues<Fields>["internal"]>): Data<Fields, Getters>;
+  commit(
     data: Lazy<FieldsValues<Fields>["internal"]>[]
   ): Data<Fields, Getters>[];
-  protected commit(
+  commit(
     data:
       | Lazy<FieldsValues<Fields>["internal"]>
       | Lazy<FieldsValues<Fields>["internal"]>[]
