@@ -90,7 +90,7 @@ const resource = new Resource({
 | `fields.request`  | fields in requests                    |
 | `fields.default`  | fields in both responses and requests |
 
-`Resouce` uses multiple field options, allowing you to describe the fields that change between request and response by defining them both in `fields.request` and `fields.response`. **NOTE** that fields in `fields.default` should not appear in `fields.response` or `fields.request`.
+`Resource` uses multiple field options, allowing you to describe the fields that change between request and response by defining them both in `fields.request` and `fields.response`. **NOTE** that fields in `fields.default` should not appear in `fields.response` or `fields.request`.
 
 Option `pkField` is the field name of the primary key field, limited to be a key of `fields.default` or `fields.response`. Primary keys are used as indexes for data storage.
 
