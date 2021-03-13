@@ -15,7 +15,8 @@
   "dependencies": {},
   "files": [
     "/src",
-    "/dist",
+    "/dist/*",
+    "!/dist/tsconfig.tsbuildinfo",
     "/types"
   ],
   "devDependencies": {
