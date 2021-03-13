@@ -1,6 +1,6 @@
 {
   "name": "superest",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Fully typed backend data management",
   "main": "dist/index.js",
   "scripts": {
