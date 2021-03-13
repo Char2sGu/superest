@@ -1,3 +1,4 @@
+import assert from "assert";
 import {
   ChoicesValidator,
   IsInstanceValidator,
@@ -5,8 +6,7 @@ import {
   TypeValidator,
   ValidationError,
   ValueRangeValidator,
-} from "../src";
-import assert from "assert";
+} from "../src/validators";
 
 describe("Validators", function () {
   describe(`#${LengthValidator.name}`, function () {
