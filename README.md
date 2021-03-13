@@ -162,7 +162,7 @@ data.date; // <- Date
 
 It can also accepts a primary key, then the getter returned will return the corresponding stored data object or `undefined`.
 
-## Connvert to External Data
+## Convert to External Data
 
 ```ts
 const external = resource.asField.toExternal({
