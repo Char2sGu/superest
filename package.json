@@ -1,7 +1,7 @@
 {
   "name": "superest",
-  "version": "0.1.0",
-  "description": "Wrap your REST API and enjoy a fully typed development!",
+  "version": "0.3.0",
+  "description": "Fully typed backend data management",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc -b src",
