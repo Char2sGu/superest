@@ -1,7 +1,12 @@
 import assert from "assert";
-import { DateField, ListField, NumberField, StringField } from "../src";
+import {
+  DateField,
+  ListField,
+  NumberField,
+  StringField,
+  ValidationError,
+} from "../src";
 import { Field } from "../src/fields";
-import { ValidationError } from "../src/validators";
 
 describe("Fields", function () {
   describe("Common", function () {

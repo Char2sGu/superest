@@ -6,3 +6,4 @@ export {
   StringField,
 } from "./fields";
 export { ResData, Resource } from "./resources";
+export { ValidationError } from "./validators";

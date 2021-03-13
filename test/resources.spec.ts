@@ -1,6 +1,5 @@
 import assert from "assert";
-import { DateField, NumberField, Resource } from "../src";
-import { ValidationError } from "../src/validators";
+import { DateField, NumberField, Resource, ValidationError } from "../src";
 
 describe("Resources", function () {
   describe(`#${Resource.name}`, function () {
