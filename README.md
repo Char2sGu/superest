@@ -1,6 +1,6 @@
 # superest
 
-Fully typed backend data management.
+Fully typed backend data management
 
 # Features
 
