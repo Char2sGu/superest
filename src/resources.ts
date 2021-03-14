@@ -1,4 +1,4 @@
-import { Field, Lazy, Meta, Values } from "./fields";
+import { Field, FieldOptions, Lazy, Values } from "./fields";
 import { IsInstanceValidator, ValidationError } from "./validators";
 
 export type PK = string | number;
@@ -221,14 +221,15 @@ export class Resource<
     type rawExternal = FieldsValues<Fields>["rawExternal"];
     type External = FieldsValues<Fields>["external"];
 
-    return class ResourceField<M extends Meta> extends Field<
-      M,
+    return class ResourceField<Opts extends FieldOptions> extends Field<
+      Opts,
       RawInternal,
       Internal,
       rawExternal,
       External
     > {
-      setup() {
+      constructor(options: Opts) {
+        super(options);
         this.validators.push(new IsInstanceValidator(Object));
       }
 

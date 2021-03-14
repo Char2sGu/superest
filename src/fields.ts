@@ -8,24 +8,24 @@ import {
   ValueRangeValidator,
 } from "./validators";
 
-export interface Meta extends Record<string, unknown> {
+export interface FieldOptions extends Record<string, unknown> {
   nullable?: boolean;
   optional?: boolean;
   rules?: ((v: unknown) => true | string)[];
 }
 
 export type Values<F extends Field> = F extends Field<
-  infer M,
+  infer Opts,
   infer VRI,
   infer VI,
   infer VRE,
   infer VE
 >
   ? {
-      rawInternal: M["nullable"] extends true ? VRI | null : VRI;
-      internal: M["nullable"] extends true ? VI | null : VI;
-      rawExternal: M["optional"] extends true ? VRE | undefined : VRE;
-      external: M["optional"] extends true ? VE | undefined : VE;
+      rawInternal: Opts["nullable"] extends true ? VRI | null : VRI;
+      internal: Opts["nullable"] extends true ? VI | null : VI;
+      rawExternal: Opts["optional"] extends true ? VRE | undefined : VRE;
+      external: Opts["optional"] extends true ? VE | undefined : VE;
     }
   : unknown;
 
@@ -36,7 +36,7 @@ export type Lazy<T> = {
 export type NonLazy<T> = T extends Lazy<infer R> ? R : unknown;
 
 export abstract class Field<
-  M extends Meta = {},
+  Opts extends FieldOptions = {},
   VRI = unknown,
   VI = VRI,
   VRE = VI,
@@ -44,25 +44,28 @@ export abstract class Field<
 > {
   validators: Validator[] = [];
 
-  constructor(readonly meta: M) {
-    this.setup();
-  }
+  readonly nullable;
+  readonly optional;
+  readonly rules;
 
-  setup() {
-    return;
+  // Strangely, if `options` is not made a attribute, the type `Values` will fail
+  constructor(readonly options: Opts) {
+    this.nullable = options.nullable;
+    this.optional = options.optional;
+    this.rules = options.rules;
   }
 
   abstract toInternalValue(value: VRI): () => VI;
   abstract toExternalValue(value: VRE): VE;
 
   toInternal(value: VRI | null) {
-    type V = M["nullable"] extends true ? VI | null : VI;
+    type V = Opts["nullable"] extends true ? VI | null : VI;
     if (this.validateNull(value)) return () => value as V;
     return this.toInternalValue(value) as () => V;
   }
   toExternal(value: VRE | undefined) {
-    type V = M["optional"] extends true ? VE | undefined : VE;
-    if (value === undefined && this.meta.optional) return value as V;
+    type V = Opts["optional"] extends true ? VE | undefined : VE;
+    if (value === undefined && this.optional) return value as V;
     this.runAllValidations(value);
     return this.toExternalValue(value as VRE) as V;
   }
@@ -75,7 +78,7 @@ export abstract class Field<
   }
   validateNull(value: unknown): value is null {
     if (value == null)
-      if (this.meta.nullable) return true;
+      if (this.nullable) return true;
       else throw new ValidationError(value, "Not nullable");
     else return false;
   }
@@ -83,7 +86,7 @@ export abstract class Field<
     this.validators.forEach((v) => v.validate(value, this));
   }
   validateRules(value: unknown) {
-    this.meta.rules?.forEach((rule) => {
+    this.rules?.forEach((rule) => {
       const ret = rule(value);
       if (typeof ret == "string") throw new ValidationError(value, ret);
     });
@@ -94,10 +97,10 @@ export abstract class Field<
   }
 }
 
-export abstract class SimpleField<M extends Meta, V = unknown> extends Field<
-  M,
-  V
-> {
+export abstract class SimpleField<
+  Opts extends FieldOptions,
+  V = unknown
+> extends Field<Opts, V> {
   toInternalValue(value: V) {
     return () => value;
   }
@@ -108,21 +111,30 @@ export abstract class SimpleField<M extends Meta, V = unknown> extends Field<
 
 // TODO: generic choices
 export class StringField<
-  M extends Meta & {
+  Opts extends FieldOptions & {
     minLength?: number;
     maxLength?: number;
     choices?: string[];
   }
-> extends SimpleField<M, string> {
-  setup() {
+> extends SimpleField<Opts, string> {
+  readonly minLength;
+  readonly maxLength;
+  readonly choices;
+
+  constructor(options: Opts) {
+    super(options);
+    this.minLength = options.minLength;
+    this.maxLength = options.maxLength;
+    this.choices = options.choices;
+
     this.validators.push(new TypeValidator("string"));
-    if (this.meta.choices)
-      this.validators.push(new ChoicesValidator(...this.meta.choices));
-    if (this.meta.minLength || this.meta.maxLength)
+    if (options.choices)
+      this.validators.push(new ChoicesValidator(...options.choices));
+    if (options.minLength || options.maxLength)
       this.validators.push(
         new LengthValidator({
-          max: this.meta.maxLength,
-          min: this.meta.minLength,
+          max: options.maxLength,
+          min: options.minLength,
         })
       );
   }
@@ -130,38 +142,62 @@ export class StringField<
 
 // TODO: generic choices
 export class NumberField<
-  M extends Meta & { maxValue?: number; minValue?: number; choices?: number[] }
-> extends SimpleField<M, number> {
-  setup() {
+  Opts extends FieldOptions & {
+    maxValue?: number;
+    minValue?: number;
+    choices?: number[];
+  }
+> extends SimpleField<Opts, number> {
+  readonly maxValue;
+  readonly minValue;
+  readonly choices;
+
+  constructor(options: Opts) {
+    super(options);
+    this.maxValue = options.maxValue;
+    this.minValue = options.minValue;
+    this.choices = options.choices;
+
     this.validators.push(new TypeValidator("number"));
-    if (this.meta.choices)
-      this.validators.push(new ChoicesValidator(...this.meta.choices));
-    if (this.meta.minValue || this.meta.maxValue)
+    if (options.choices)
+      this.validators.push(new ChoicesValidator(...options.choices));
+    if (options.minValue || options.maxValue)
       this.validators.push(
         new ValueRangeValidator({
-          max: this.meta.maxValue,
-          min: this.meta.minValue,
+          max: options.maxValue,
+          min: options.minValue,
         })
       );
   }
 }
 
-export class BooleanField<M extends Meta> extends SimpleField<M, boolean> {
-  setup() {
+export class BooleanField<Opts extends FieldOptions> extends SimpleField<
+  Opts,
+  boolean
+> {
+  constructor(options: Opts) {
+    super(options);
     this.validators.push(new TypeValidator("boolean"));
   }
 }
 
 export class DateField<
-  M extends Meta & { minValue?: Date; maxValue?: Date }
-> extends Field<M, string, Date, Date, string> {
-  setup() {
+  Opts extends FieldOptions & { minValue?: Date; maxValue?: Date }
+> extends Field<Opts, string, Date, Date, string> {
+  readonly minValue;
+  readonly maxValue;
+
+  constructor(options: Opts) {
+    super(options);
+    this.minValue = options.minValue;
+    this.maxValue = options.maxValue;
+
     this.validators.push(new IsInstanceValidator(Date));
-    if (this.meta.maxValue || this.meta.minValue)
+    if (options.maxValue || options.minValue)
       this.validators.push(
         new ValueRangeValidator({
-          max: this.meta.maxValue?.getTime(),
-          min: this.meta.minValue?.getTime(),
+          max: options.maxValue?.getTime(),
+          min: options.minValue?.getTime(),
         })
       );
   }
@@ -175,27 +211,34 @@ export class DateField<
   }
 }
 
-export class ListField<M extends Meta & { field: Field }> extends Field<
-  M,
-  Values<M["field"]>["rawInternal"][],
-  Values<M["field"]>["internal"][],
-  Values<M["field"]>["rawExternal"][],
-  Values<M["field"]>["external"][]
+export class ListField<
+  Opts extends FieldOptions & { field: Field }
+> extends Field<
+  Opts,
+  Values<Opts["field"]>["rawInternal"][],
+  Values<Opts["field"]>["internal"][],
+  Values<Opts["field"]>["rawExternal"][],
+  Values<Opts["field"]>["external"][]
 > {
-  setup() {
+  readonly field;
+
+  constructor(options: Opts) {
+    super(options);
+    this.field = options.field;
+
     this.validators.push(new IsInstanceValidator(Array));
   }
 
-  toInternalValue(value: Values<M["field"]>["rawInternal"][]) {
-    const ret = value.map((v) => this.meta.field.toInternal(v));
-    return () => ret.map((v) => v()) as Values<M["field"]>["internal"][];
+  toInternalValue(value: Values<Opts["field"]>["rawInternal"][]) {
+    const ret = value.map((v) => this.field.toInternal(v));
+    return () => ret.map((v) => v()) as Values<Opts["field"]>["internal"][];
   }
-  toExternalValue(value: Values<M["field"]>["rawExternal"][]) {
-    return value.map((v) => this.meta.field.toExternal(v)) as Values<
-      M["field"]
+  toExternalValue(value: Values<Opts["field"]>["rawExternal"][]) {
+    return value.map((v) => this.field.toExternal(v)) as Values<
+      Opts["field"]
     >["external"][];
   }
   validate(value: unknown[]) {
-    value.forEach((v) => this.meta.field.runAllValidations(v));
+    value.forEach((v) => this.field.runAllValidations(v));
   }
 }
