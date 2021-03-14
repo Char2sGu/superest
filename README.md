@@ -54,8 +54,8 @@ resource.getURL(undefined, "action");
 | choices   | `Array`    | -                                      | to external      | 1, 2  |
 | maxLength | `number`   | -                                      | to external      | 1     |
 | minLength | `number`   | -                                      | to external      | 1     |
-| maxValue  | `number`   | -                                      | to external      | 2     |
-| minValue  | `number`   | -                                      | to external      | 2     |
+| maxValue  | `number`   | -                                      | to external      | 2, 4  |
+| minValue  | `number`   | -                                      | to external      | 2, 4  |
 | field     | `Field`    | specify the child fields               | both             | 5     |
 | rules     | `Function` | custom validations                     | to external      | -     |
 
