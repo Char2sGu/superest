@@ -152,13 +152,9 @@ export class BooleanField<M extends Meta> extends SimpleField<M, boolean> {
   }
 }
 
-export class DateField extends Field<
-  Meta & { minValue?: Date; maxValue?: Date },
-  string,
-  Date,
-  Date,
-  string
-> {
+export class DateField<
+  M extends Meta & { minValue?: Date; maxValue?: Date }
+> extends Field<M, string, Date, Date, string> {
   setup() {
     this.validators.push(new IsInstanceValidator(Date));
     if (this.meta.maxValue || this.meta.minValue)
