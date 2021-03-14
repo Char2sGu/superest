@@ -15,8 +15,6 @@ export interface Action<
  * The generic type `F` here is used to get the detailed literal types of the fields' meta.
  * When `F` is not set as a generic type, literal types such as `true` or `"a string"` will be replaced to
  * `boolean` and `string`.
- *
- * I know that this is not a perfect solution, so I will keep seeking for better ones.
  */
 export interface FieldsOptions<F extends Field = Field>
   extends Record<"default" | "response" | "request", Record<string, F>> {}
