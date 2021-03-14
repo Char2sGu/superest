@@ -14,9 +14,9 @@
   "license": "Apache-2.0",
   "dependencies": {},
   "files": [
-    "!tsconfig.*",
     "/src/*",
-    "/dist/*"
+    "/dist/*",
+    "!tsconfig.*"
   ],
   "devDependencies": {
     "@types/mocha": "^8.2.1",
