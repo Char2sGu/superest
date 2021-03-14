@@ -87,9 +87,9 @@ export class Resource<
 > {
   readonly basename;
   readonly objects;
-  protected readonly fields;
-  protected readonly pkField;
-  protected readonly getters;
+  readonly fields;
+  readonly pkField;
+  readonly getters;
   readonly actions;
 
   readonly Field;
@@ -127,11 +127,11 @@ export class Resource<
     return `/${this.basename}/${pk && pk + "/"}${action && action + "/"}`;
   }
 
-  protected getPK(value: FieldsValues<Fields>["internal"] | PK) {
+  getPK(value: FieldsValues<Fields>["internal"] | PK) {
     return typeof value == "object" ? (value[this.pkField] as PK) : value;
   }
 
-  protected matchFields<K extends string, V, R>(
+  matchFields<K extends string, V, R>(
     data: Record<K, V>,
     fields: Record<string, Field>,
     callback: (k: K, v: V, field: Field) => R
