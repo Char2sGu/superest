@@ -1,9 +1,11 @@
 export {
   BooleanField,
   DateField,
+  FieldOptions,
   ListField,
   NumberField,
   StringField,
+  Values,
 } from "./fields";
-export { ResData, Resource } from "./resources";
+export { build } from "./resources";
 export { ValidationError } from "./validators";

@@ -1,156 +1,151 @@
 import assert from "assert";
-import { DateField, NumberField, Resource, ValidationError } from "../src";
+import {
+  build,
+  DateField,
+  FieldOptions,
+  NumberField,
+  ValidationError,
+} from "../src";
 
-describe("Resources", function () {
-  describe(`#${Resource.name}`, function () {
-    const resource = new Resource({
-      basename: "",
-      fields: {
-        default: {
-          date: new DateField({}),
-        },
-        response: {
-          id: new NumberField({}),
-        },
-        request: {},
+describe("Resource", function () {
+  class Resource<Opts extends FieldOptions> extends build({
+    fields: {
+      default: {
+        date: new DateField({}),
       },
-      pkField: "id",
-      getters: {
-        idGetter: (data) => data.id,
+      response: {
+        id: new NumberField({}),
       },
-      actions: {
-        retrieve(resource) {
-          return async (id: number) => {
-            return resource.asField.toInternal({
-              id,
-              date: new Date().toISOString(),
-            })();
-          };
-        },
+      request: {},
+    },
+    pkField: "id",
+    getters: {
+      idGetter: (data) => data.id,
+    },
+  })<Opts> {}
 
-        list(resource) {
-          return async (id: number) => {
-            return [
-              {
-                id,
-                date: new Date().toISOString(),
-              },
-            ].map((v) => resource.asField.toInternal(v)());
-          };
-        },
-      },
+  describe("Static", function () {
+    describe(`#${Resource.clear.name}()`, function () {
+      it("objects should be empty", function () {
+        Resource.objects[0] = {
+          id: 0,
+          date: new Date(),
+          idGetter: 0,
+        };
+
+        Resource.clear();
+
+        assert.strictEqual(Object.keys(Resource.objects).length, 0);
+      });
     });
 
-    describe(`#${resource.Field.name}`, function () {
-      const field = new resource.Field({});
+    describe(`#${Resource.getPK.name}()`, function () {
+      const id = 1;
 
-      describe(`#${field.validate.name}()`, function () {
-        it("should throw an validation error when some of the fields are illegal", function () {
-          assert.throws(
-            () =>
-              field.validate({
-                date: null,
-              }),
-            ValidationError
-          );
+      it("passed a legal object", function () {
+        const ret = Resource.getPK({
+          id,
+          date: new Date(),
         });
-
-        it("should pass when all the fields are legal", function () {
-          field.validate({
-            date: new Date(),
-          });
-        });
+        assert.strictEqual(ret, id);
       });
 
-      describe(`#${field.toInternalValue.name}()`, function () {
-        const id = 1;
-        const date = new Date();
+      it("passed a primary key", function () {
+        const ret = Resource.getPK(id);
+        assert.strictEqual(ret, id);
+      });
+    });
 
-        const internal = field.toInternalValue({
+    describe(`#${Resource.matchFields.name}()`, function () {
+      it("data should be mapped properly", function () {
+        const ret = Resource.matchFields(
+          {
+            other: null,
+            id: null,
+          },
+          { ...Resource.fields.default, ...Resource.fields.response },
+          (...args) => args
+        );
+
+        assert.strictEqual(ret.id?.[1], null);
+        assert.strictEqual(ret.other?.[1], undefined);
+      });
+    });
+
+    describe(`#${Resource.commit.name}()`, function () {
+      const id = 1;
+      const date = new Date();
+
+      it("data should be processed and saved", function () {
+        const ret = Resource.commit({
+          id: () => id,
+          date: () => date,
+        });
+        assert.strictEqual(Resource.objects[ret.id], ret, "data is not saved");
+        assert.strictEqual(ret.idGetter, ret.id, "getters fail");
+      });
+
+      it("save again should update the data but not change the reference", function () {
+        const date = new Date();
+        const ret = Resource.commit({
+          id: () => id,
+          date: () => date,
+        });
+        assert.strictEqual(ret, Resource.objects[id], "reference changed");
+        assert.strictEqual(
+          ret.date.toISOString(),
+          date.toISOString(),
+          "data is not updated"
+        );
+      });
+    });
+  });
+
+  describe("Instance", function () {
+    const asField = new Resource({});
+
+    describe(`#${asField.validate.name}()`, function () {
+      it("should throw an validation error when some of the fields are illegal", function () {
+        assert.throws(
+          () =>
+            asField.validate({
+              date: null,
+            }),
+          ValidationError
+        );
+      });
+
+      it("should pass when all the fields are legal", function () {
+        asField.validate({
+          date: new Date(),
+        });
+      });
+    });
+
+    describe(`#${asField.toInternalValue.name}()`, function () {
+      const id = 1;
+      const date = new Date();
+
+      it("fields should be processed to internal", function () {
+        const internal = asField.toInternalValue({
           id,
           date: date.toISOString(),
         })();
-
-        it("data should be saved", function () {
-          assert.strictEqual(resource.objects[internal.id], internal);
-        });
-
-        it("fields should be processed to internal", function () {
-          assert.strictEqual(internal.date.constructor, Date);
-        });
-
-        it("getters should work", function () {
-          assert.strictEqual(internal.idGetter, internal.id);
-        });
-
-        it("saved data can be referenced when passed a primary key", function () {
-          assert.strictEqual(field.toInternalValue(internal.id)(), internal);
-        });
-
-        it("save again should update the data but not change the reference", function () {
-          const date = new Date();
-          const ret = field.toInternalValue({
-            id,
-            date: date.toISOString(),
-          })();
-          assert.strictEqual(ret, resource.objects[id], "reference changed");
-          assert.strictEqual(
-            internal.date.toISOString(),
-            date.toISOString(),
-            "data is not updated"
-          );
-        });
+        assert.strictEqual(internal.date.constructor, Date);
       });
 
-      describe(`#${field.toExternalValue.name}()`, function () {
-        const date = new Date();
-
-        const external = field.toExternalValue({ date });
-
-        it("data should be processed to external data", function () {
-          assert.strictEqual(external.date, date.toISOString());
-        });
-      });
-
-      describe(`Actions`, function () {
-        it("returns a single data object", async function () {
-          const id = 1;
-          const data = await resource.actions.retrieve(id);
-          assert.strictEqual(data, resource.objects[id]);
-        });
-
-        it("returns a list of data objects", async function () {
-          const id = 2;
-          const data = await resource.actions.list(id);
-          assert.strictEqual(data[0], resource.objects[id]);
-        });
+      it("saved data can be referenced when passed a primary key", function () {
+        assert.notStrictEqual(asField.toInternalValue(id)(), undefined);
       });
     });
 
-    describe(`#${resource.getURL.name}()`, function () {
-      const pk = 1;
-      const action = "action";
+    describe(`#${asField.toExternalValue.name}()`, function () {
+      const date = new Date();
 
-      it("should return the root url when passed no args", function () {
-        assert.strictEqual(resource.getURL(), `/${resource.basename}/`);
-      });
+      const external = asField.toExternalValue({ date });
 
-      it("should return the obj url when passed pk only", function () {
-        assert.strictEqual(resource.getURL(1), `/${resource.basename}/${pk}/`);
-      });
-
-      it("should return the obj url with action when passed both pk and action", function () {
-        assert.strictEqual(
-          resource.getURL(1, action),
-          `/${resource.basename}/${pk}/${action}/`
-        );
-      });
-
-      it("should return the root url with action when passed action only", function () {
-        assert.strictEqual(
-          resource.getURL(undefined, action),
-          `/${resource.basename}/${action}/`
-        );
+      it("data should be processed to external data", function () {
+        assert.strictEqual(external.date, date.toISOString());
       });
     });
   });
