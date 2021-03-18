@@ -16,26 +16,7 @@ With `superest`, any data just need to be retrieved from the backend once, and y
 
 # Usage
 
-## Getting URL
-
-```ts
-const resource = new Resource({
-  // ...
-  basename: "users",
-  // ...
-});
-
-// "/users/"
-resource.getURL();
-// "/users/1/"
-resource.getURL(1);
-// "/users/1/action/"
-resource.getURL(1, "action");
-// "/users/action/"
-resource.getURL(undefined, "action");
-```
-
-## Data Schema
+## Fields
 
 `Field` is used to describe a single field of an object of a resource.
 
@@ -59,11 +40,13 @@ resource.getURL(undefined, "action");
 | field     | `Field`    | specify the child fields               | both             | 5     |
 | rules     | `Function` | custom validations                     | to external      | -     |
 
----
+## Creating Resources
+
+`Resource` is a special `Field`.
 
 ```ts
-const resource = new Resource({
-  // ...
+class MyResource<Opts extends FieldOptions> extends build({
+  objects: {},
   fields: {
     default: {
       username: new StringField({}),
@@ -80,42 +63,47 @@ const resource = new Resource({
   getters: {
     idGetter: (data) => data.id,
   },
-  // ...
-});
+})<Opts> {}
 ```
 
-| Option            | Significance                          |
-| ----------------- | ------------------------------------- |
-| `fields.response` | fields in responses                   |
-| `fields.request`  | fields in requests                    |
-| `fields.default`  | fields in both responses and requests |
+Required Options:
 
-`Resource` uses multiple field options, allowing you to describe the fields that change between request and response by defining them both in `fields.request` and `fields.response`. **NOTE** that fields in `fields.default` should not appear in `fields.response` or `fields.request`.
+- `fields` - Data structure
+  - `response` - Fields in responses
+  - `request` - Fields in requests
+  - `default` - Fields in both responses and requests
+- `pkField` - Field name of the primary key field  
+  Limited to be a key of `fields.default` or `fields.response`.
 
-Option `pkField` is the field name of the primary key field, limited to be a key of `fields.default` or `fields.response`. Primary keys are used as indexes for data storage.
+Optional Options:
 
-You can define computed fields in option `getters`, when we get a data object, `data.idGetter == data.id` will return `true`.
+- `objects` - Data storage object
+- `getters` - Computed attributes
 
----
+It allows multiple field options to describe the fields that change between request and response by defining them both in `fields.request` and `fields.response`. **NOTE** that fields in `fields.default` must not appear in `fields.response` or `fields.request`.
 
-You can use `ResData` to get the data type of a `Resource`
+## Types
+
+You can use the tool type `Values` to get the value type of a `Field`.
+
+Remember that `Resource` is derived from `Field`.
 
 ```ts
-type DataType = ResData<typeof myResource>;
+type InternalTypeOfSomeField = Values<SomeField>["internal"];
 ```
 
-## Commit Existing Data
+## Committing Existing Data
 
 `.commit()` accepts a internal data object, defines computed fields on it and saves it to `.objects` using its primary key as the index. It also accepts a list of objects.
 
 ```ts
-const data = resource.commit({
+const data = MyResource.commit({
   id: 1,
   username: "aaaabbbb",
   date: new Date(),
 });
 
-data == resource.objects[data.id]; // true.
+data == MyResource.objects[data.id]; // true.
 data.idGetter == data.id; // true
 data.id = "illegal"; // ValidationError
 ```
@@ -123,7 +111,7 @@ data.id = "illegal"; // ValidationError
 To update the data, you can commit another object with a same primary key, then each field in the old object will be updated but the reference will not change.
 
 ```ts
-const updated = resource.commit({
+const updated = MyResource.commit({
   id: 1,
   username: "updated",
   date: new Date(),
@@ -132,21 +120,21 @@ const updated = resource.commit({
 updated == data; // true
 ```
 
-## Clear Storage
+## Clearing Storage
 
-This will **delete** any keys on `objects`, so the reference will not change either.
+This will **delete** any keys on `.objects`, so the reference will not change either.
 
 ```ts
-const objects = resource.objects;
-resource.clearObjects();
+const objects = MyResource.objects;
+MyResource.clear();
 
-Object.keys(resource.objects).length; // 0
-resource.objects == objects; // true
+Object.keys(MyResource.objects).length; // 0
+MyResource.objects == objects; // true
 ```
 
-## Commit External Response Data
+## Committing External Response Data
 
-`.asField.toInternal()` will convert the object to internal data, and then call `.commit()`
+`.toInternal()` will convert the object to internal data, and then call `.commit()`
 
 ```ts
 const external = {
@@ -154,7 +142,7 @@ const external = {
   username: "updated",
   date: new Date().toISOString(), // <- string
 };
-const dataGetter = resource.asField.toInternal(external);
+const dataGetter = new MyResource({}).toInternal(external);
 const data = dataGetter();
 
 data.date; // <- Date
@@ -162,10 +150,10 @@ data.date; // <- Date
 
 It can also accepts a primary key, then the getter returned will return the corresponding stored data object or `undefined`.
 
-## Convert to External Data
+## Convertting to External Data
 
 ```ts
-const external = resource.asField.toExternal({
+const external = new MyResource({}).toExternal({
   username: "username",
   password: "abcdefg",
   date: new Date(), // <- Date
@@ -174,45 +162,37 @@ const external = resource.asField.toExternal({
 external.date; // <- string
 ```
 
-## Actions
+## Nesting
 
-`actions` makes common actions reusable.
-
-```ts
-const resource = new Resource({
-  // ...
-  actions: {
-    retrieve(resource) {
-      return async (id: number) => {
-        const response = await axios.get(resource.getURL(id));
-        return resource.asField.toInternal(response.data);
-      };
-    },
-  },
-  // ...
-});
-
-const data = await resource.actions.retrieve(1);
-```
-
-## Nested
-
-`.Field` is a derived class of `Field`. (`.asField` is its instance)
-
-Because `.asField.toInternal()` could accept a primary key, a same object only need to be retrieved from the backend once, then any other objects from the backend just need to reference its primary key, and it will be automatically link to the actual object.
+Since `Resource` is derived from `Field`, so it can also be used in the `fields` options.
 
 ```ts
-const resource = new Resource({
+build({
   // ...
   fields: {
     default: {
-      nested: new anotherResource.Field({}),
+      nested: new AnotherResource({}),
     },
-    response: {},
-    request: {},
+    // ...
   },
   // ...
 });
+```
+
+Since `.toInternal()` can accept a primary key, the same object only needs to be retrieved from the backend once, and then any other objects from the backend only need to refer to the primary key of the retrieved object, and it will be automatically linked to the actual object.
+
+## Actions
+
+```ts
+class MyResource<Opts extends FieldOptions> extends build({
+  // ...
+})<Opts> {
+  static baseURL = "/api/some-resource/";
+
+  static async list(page?: number) {
+    // ...
+  }
+}
 ```
 
 ## Custom Storage
@@ -222,7 +202,7 @@ The option `.objects` specifies the object where the data is stored, defaultly i
 ### Share Storage With Another Resource
 
 ```ts
-const resource = new Resource({
+build({
   // ...
   objects: anotherResource.objects,
   // ...
@@ -245,7 +225,7 @@ function reactive() {
   });
 }
 
-const reactiveResource = new Resource({
+build({
   // ...
   objects: reactive(),
   // ...
@@ -253,8 +233,6 @@ const reactiveResource = new Resource({
 ```
 
 ## Utilities
-
-All the utilities can be imported from "/utils"
 
 ### `transformCase()`
 
