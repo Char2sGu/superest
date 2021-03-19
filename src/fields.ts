@@ -109,19 +109,21 @@ export abstract class SimpleField<
   }
 }
 
-// TODO: generic choices
 export class StringField<
-  Opts extends FieldOptions & {
-    minLength?: number;
-    maxLength?: number;
-    choices?: string[];
-  }
-> extends SimpleField<Opts, string> {
+  Opts extends FieldOptions,
+  Choices extends string
+> extends SimpleField<Opts, Choices> {
   readonly minLength;
   readonly maxLength;
   readonly choices;
 
-  constructor(options: Opts) {
+  constructor(
+    options: Opts & {
+      minLength?: number;
+      maxLength?: number;
+      choices?: Choices[];
+    }
+  ) {
     super(options);
     this.minLength = options.minLength;
     this.maxLength = options.maxLength;
@@ -140,19 +142,21 @@ export class StringField<
   }
 }
 
-// TODO: generic choices
 export class NumberField<
-  Opts extends FieldOptions & {
-    maxValue?: number;
-    minValue?: number;
-    choices?: number[];
-  }
-> extends SimpleField<Opts, number> {
+  Opts extends FieldOptions,
+  Choices extends number
+> extends SimpleField<Opts, Choices> {
   readonly maxValue;
   readonly minValue;
   readonly choices;
 
-  constructor(options: Opts) {
+  constructor(
+    options: Opts & {
+      maxValue?: number;
+      minValue?: number;
+      choices?: Choices[];
+    }
+  ) {
     super(options);
     this.maxValue = options.maxValue;
     this.minValue = options.minValue;
@@ -181,13 +185,17 @@ export class BooleanField<Opts extends FieldOptions> extends SimpleField<
   }
 }
 
-export class DateField<
-  Opts extends FieldOptions & { minValue?: Date; maxValue?: Date }
-> extends Field<Opts, string, Date, Date, string> {
+export class DateField<Opts extends FieldOptions> extends Field<
+  Opts,
+  string,
+  Date,
+  Date,
+  string
+> {
   readonly minValue;
   readonly maxValue;
 
-  constructor(options: Opts) {
+  constructor(options: Opts & { minValue?: Date; maxValue?: Date }) {
     super(options);
     this.minValue = options.minValue;
     this.maxValue = options.maxValue;
