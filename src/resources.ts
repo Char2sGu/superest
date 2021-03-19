@@ -106,7 +106,7 @@ export function build<
         Object.defineProperty(processed, k, {
           get: () => data[k](),
           set: (v) => {
-            fields[k].runAllValidations(v);
+            fields[k].validate(v);
             data[k as keyof typeof data] = () => v;
           },
           configurable: true,
@@ -145,6 +145,19 @@ export function build<
     constructor(options: Opts) {
       super(options);
       this.validators.push(new IsInstanceValidator(Object));
+      this.validators.push({
+        validate: (value: Record<string, unknown>) => {
+          Resource.matchFields(
+            value,
+            {
+              ...Resource.fields.default,
+              ...Resource.fields.response,
+              ...Resource.fields.request,
+            },
+            (k, v, field) => field.validate(v)
+          );
+        },
+      });
     }
 
     toInternalValue(value: RawInternal | PK): () => Internal {
@@ -179,18 +192,6 @@ export function build<
         (k, v, field) =>
           this.handleValidationError(field.toExternal.bind(field), value, k)(v)
       ) as External;
-    }
-
-    validate(value: Record<string, unknown>) {
-      Resource.matchFields(
-        value,
-        {
-          ...Resource.fields.default,
-          ...Resource.fields.response,
-          ...Resource.fields.request,
-        },
-        (k, v, field) => field.runAllValidations(v)
-      );
     }
 
     handleValidationError<T extends (...args: unknown[]) => unknown>(

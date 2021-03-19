@@ -11,7 +11,6 @@ import {
 export interface FieldOptions extends Record<string, unknown> {
   nullable?: boolean;
   optional?: boolean;
-  rules?: ((v: unknown) => true | string)[];
 }
 
 export type Values<F extends Field> = F extends Field<
@@ -46,13 +45,11 @@ export abstract class Field<
 
   readonly nullable;
   readonly optional;
-  readonly rules;
 
   // Strangely, if `options` is not made a attribute, the type `Values` will fail
   constructor(readonly options: Opts) {
     this.nullable = options.nullable;
     this.optional = options.optional;
-    this.rules = options.rules;
   }
 
   abstract toInternalValue(value: VRI): () => VI;
@@ -66,15 +63,12 @@ export abstract class Field<
   toExternal(value: VRE | undefined) {
     type V = Opts["optional"] extends true ? VE | undefined : VE;
     if (value === undefined && this.optional) return value as V;
-    this.runAllValidations(value);
+    this.validate(value);
     return this.toExternalValue(value as VRE) as V;
   }
 
-  runAllValidations(value: unknown) {
-    if (this.validateNull(value)) return;
-    this.runValidators(value);
-    this.validateRules(value);
-    this.validate(value);
+  validate(value: unknown) {
+    this.validateNull(value) || this.runValidators(value);
   }
   validateNull(value: unknown): value is null {
     if (value == null)
@@ -84,16 +78,6 @@ export abstract class Field<
   }
   runValidators(value: unknown) {
     this.validators.forEach((v) => v.validate(value, this));
-  }
-  validateRules(value: unknown) {
-    this.rules?.forEach((rule) => {
-      const ret = rule(value);
-      if (typeof ret == "string") throw new ValidationError(value, ret);
-    });
-  }
-  validate(value: unknown) {
-    value;
-    return;
   }
 }
 
@@ -235,6 +219,11 @@ export class ListField<
     this.field = options.field;
 
     this.validators.push(new IsInstanceValidator(Array));
+    this.validators.push({
+      validate: (value: unknown[]) => {
+        value.forEach((v) => this.field.validate(v));
+      },
+    });
   }
 
   toInternalValue(value: Values<Opts["field"]>["rawInternal"][]) {
@@ -245,8 +234,5 @@ export class ListField<
     return value.map((v) => this.field.toExternal(v)) as Values<
       Opts["field"]
     >["external"][];
-  }
-  validate(value: unknown[]) {
-    value.forEach((v) => this.field.runAllValidations(v));
   }
 }

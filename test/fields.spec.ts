@@ -35,23 +35,6 @@ describe("Fields", function () {
         new StringField({ optional: true }).toExternal(undefined);
       });
     });
-
-    describe(`#${Field.prototype.validateRules.name}()`, function () {
-      it("should fail when some of the rules returns a `string` ", function () {
-        assert.throws(() =>
-          new StringField({
-            rules: [(v) => true, (v) => "Fail"],
-          }).validateRules("anything")
-        ),
-          ValidationError;
-      });
-
-      it("should pass when all the rules returns a `true`", function () {
-        new StringField({ rules: [(v) => true, (v) => true] }).validateRules(
-          "anything"
-        );
-      });
-    });
   });
 
   describe(`#${DateField.name}`, function () {
