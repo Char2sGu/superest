@@ -67,10 +67,17 @@ export abstract class Field<
     return this.toExternalValue(value as VRE) as V;
   }
 
-  validate(value: unknown) {
-    this.validateNull(value) || this.runValidators(value);
+  /**
+   * Entry method for validations.
+   *
+   * Skip main validations if the value is and is allowed to be `null`.
+   * @param value
+   * @returns Whether the validations are fully executed.
+   */
+  validate<T>(value: T): value is Exclude<T, null | undefined> {
+    return !this.validateNull(value) && !void this.runValidators(value);
   }
-  validateNull(value: unknown): value is null {
+  validateNull(value: unknown): value is null | undefined {
     if (value == null)
       if (this.nullable) return true;
       else throw new ValidationError(value, "Not nullable");

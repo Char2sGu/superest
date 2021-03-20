@@ -1,4 +1,5 @@
 import assert from "assert";
+import { STATUS_CODES } from "http";
 import {
   DateField,
   ListField,
@@ -10,6 +11,23 @@ import { Field } from "../src/fields";
 
 describe("Fields", function () {
   describe("Common", function () {
+    describe(`#${Field.prototype.validate.name}()`, function () {
+      it("should throw an error when the value is illegal", function () {
+        assert.throws(() => new StringField({}).validate(1), ValidationError);
+      });
+
+      it("should return true when the value is legal", function () {
+        const ret = new StringField({}).validate("");
+        assert.strictEqual(ret, true);
+      });
+
+      it("should return false when the value is and is allowed to be `null`", function () {
+        const field = new StringField({ nullable: true });
+        assert.strictEqual(field.validate(null), false);
+        assert.strictEqual(field.validate(undefined), false);
+      });
+    });
+
     describe(`#${Field.prototype.toInternal.name}()`, function () {
       it("should fail when passed a `null` and not `nullable`", function () {
         assert.throws(
