@@ -3,20 +3,27 @@ import assert from "assert";
 
 describe("Utilities", function () {
   describe(`#${transformCase.name}()`, function () {
+    it("transform an primitive value should return the value itself", function () {
+      assert.strictEqual(
+        transformCase("a", (v) => v.toUpperCase()),
+        "a"
+      );
+    });
+
     it("transform an complex object with nested objects and arrays", function () {
       const raw = {
         A: "A",
         B: {
           A: "A",
         },
-        C: [{ A: "A" }],
+        C: [{ A: "A" }, "a"],
       };
       const expected = {
         a: "A",
         b: {
           a: "A",
         },
-        c: [{ a: "A" }],
+        c: [{ a: "A" }, "a"],
       };
 
       assert.deepStrictEqual(
@@ -40,7 +47,7 @@ describe("Utilities", function () {
         static both = 3;
         static mixin2 = null;
       }
-      
+
       const mixined = mixinStatic(Base, Mixin1, Mixin2);
 
       assert.strictEqual(mixined.base, Base.base);

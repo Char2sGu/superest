@@ -249,6 +249,8 @@ const raw = {
 const ret = transformCase(raw, (v) => v.toUpperCase());
 // { A: { A: [ { A: null } ] } }
 raw == ret; // true
+
+transformCase("a", v.toUpperCase()); // "a"
 ```
 
 ### `mixinStatic()`
