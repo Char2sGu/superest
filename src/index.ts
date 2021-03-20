@@ -1,6 +1,7 @@
 export {
   BooleanField,
   DateField,
+  Field,
   FieldOptions,
   ListField,
   NumberField,
