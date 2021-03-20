@@ -250,3 +250,26 @@ const ret = transformCase(raw, (v) => v.toUpperCase());
 // { A: { A: [ { A: null } ] } }
 raw == ret; // true
 ```
+
+### `mixinStatic()`
+
+```ts
+class Base {
+  static both = 1;
+  static base = null;
+}
+class Mixin1 {
+  static both = 2;
+  static mixin1 = null;
+}
+class Mixin2 {
+  static both = 3;
+  static mixin2 = null;
+}
+
+const mixined = mixinStatic(Base, Mixin1, Mixin2);
+mixined.base == null; // true
+mixined.mixin1 == null; // true
+mixined.mixin2 == null; // true
+mixined.both = 3; // true
+```

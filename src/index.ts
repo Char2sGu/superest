@@ -9,5 +9,5 @@ export {
   Values,
 } from "./fields";
 export { build } from "./resources";
-export { transformCase } from "./utils";
+export { transformCase, mixinStatic } from "./utils";
 export { ValidationError } from "./validators";

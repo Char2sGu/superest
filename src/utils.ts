@@ -14,3 +14,45 @@ export function transformCase<
   }
   return data as R;
 }
+
+/**
+ * https://stackoverflow.com/questions/50374908/transform-union-type-to-intersection-type
+ */
+export type UnionToIntersection<U> = (
+  U extends any ? (k: U) => void : never
+) extends (k: infer I) => void
+  ? I
+  : never;
+
+export function mixinStatic<Base extends Function, Mixins extends Function[]>(
+  base: Base,
+  ...mixins: Mixins
+) {
+  const BUILT_IN_KEYS: (keyof Function)[] = [
+    "apply",
+    "arguments",
+    "bind",
+    "call",
+    "caller",
+    "length",
+    "name",
+    "prototype",
+    "toString",
+  ];
+
+  mixins.forEach((mixin) => {
+    const descriptors = Object.entries(
+      Object.getOwnPropertyDescriptors(mixin)
+    ).filter(([k, d]) => !BUILT_IN_KEYS.includes(k as keyof Function));
+    descriptors.forEach(([k, d]) => {
+      if (Object.getOwnPropertyDescriptor(base, k)?.configurable ?? true)
+        Object.defineProperty(base, k, d);
+    });
+  });
+
+  return base as Base &
+    Omit<
+      UnionToIntersection<Mixins[Extract<keyof Mixins, number>]>,
+      keyof Function
+    >;
+}
