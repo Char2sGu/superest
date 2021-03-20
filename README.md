@@ -212,13 +212,19 @@ build({
 
 ```ts
 function reactive() {
-  return new Proxy(Vue.observable({}), {
+  const reactive = Vue.observable({
+    objects: {},
+  });
+  type K = keyof typeof reactive.objects;
+  // must access `reactive.object` instead of `target` to trigger reaction
+  return new Proxy(reactive.objects, {
     set: (target, p, value) => {
-      Vue.set(target, p as keyof typeof target, value);
+      Vue.set(reactive.objects, p as K, value);
       return true;
     },
+    get: (target, p) => reactive.objects[p as K],
     deleteProperty: (target, p) => {
-      Vue.delete(target, p as keyof typeof target);
+      Vue.delete(reactive.objects, p as K);
       return true;
     },
   });
