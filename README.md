@@ -28,17 +28,16 @@ With `superest`, any data just need to be retrieved from the backend once, and y
 | 4   | `DateField`    | `Date`         | `string`       |
 | 5   | `ListField`    | `Array`        | `Array`        |
 
-| Option    | Type       | Significance                           | Affected Process | Owner |
-| --------- | ---------- | -------------------------------------- | ---------------- | ----- |
-| nullable  | `boolean`  | whether the value could be `null`      | both             | -     |
-| optional  | `boolean`  | whether the value could be `undefined` | to external      | -     |
-| choices   | `Array`    | -                                      | to external      | 1, 2  |
-| maxLength | `number`   | -                                      | to external      | 1     |
-| minLength | `number`   | -                                      | to external      | 1     |
-| maxValue  | `number`   | -                                      | to external      | 2, 4  |
-| minValue  | `number`   | -                                      | to external      | 2, 4  |
-| field     | `Field`    | specify the child fields               | both             | 5     |
-| rules     | `Function` | custom validations                     | to external      | -     |
+| Option    | Type      | Significance                           | Affected Process | Owner |
+| --------- | --------- | -------------------------------------- | ---------------- | ----- |
+| nullable  | `boolean` | whether the value could be `null`      | both             | -     |
+| optional  | `boolean` | whether the value could be `undefined` | to external      | -     |
+| choices   | `Array`   | -                                      | to external      | 1, 2  |
+| maxLength | `number`  | -                                      | to external      | 1     |
+| minLength | `number`  | -                                      | to external      | 1     |
+| maxValue  | `number`  | -                                      | to external      | 2, 4  |
+| minValue  | `number`  | -                                      | to external      | 2, 4  |
+| field     | `Field`   | specify the child fields               | both             | 5     |
 
 ## Creating Resources
 
