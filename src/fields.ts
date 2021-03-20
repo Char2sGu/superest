@@ -211,17 +211,18 @@ export class DateField<Opts extends FieldOptions> extends Field<
 }
 
 export class ListField<
-  Opts extends FieldOptions & { field: Field }
+  Opts extends FieldOptions,
+  Child extends Field
 > extends Field<
   Opts,
-  Values<Opts["field"]>["rawInternal"][],
-  Values<Opts["field"]>["internal"][],
-  Values<Opts["field"]>["rawExternal"][],
-  Values<Opts["field"]>["external"][]
+  Values<Child>["rawInternal"][],
+  Values<Child>["internal"][],
+  Values<Child>["rawExternal"][],
+  Values<Child>["external"][]
 > {
   readonly field;
 
-  constructor(options: Opts) {
+  constructor(options: Opts & { field: Child }) {
     super(options);
     this.field = options.field;
 
@@ -233,13 +234,13 @@ export class ListField<
     });
   }
 
-  toInternalValue(value: Values<Opts["field"]>["rawInternal"][]) {
+  toInternalValue(value: Values<Child>["rawInternal"][]) {
     const ret = value.map((v) => this.field.toInternal(v));
-    return () => ret.map((v) => v()) as Values<Opts["field"]>["internal"][];
+    return () => ret.map((v) => v()) as Values<Child>["internal"][];
   }
-  toExternalValue(value: Values<Opts["field"]>["rawExternal"][]) {
-    return value.map((v) => this.field.toExternal(v)) as Values<
-      Opts["field"]
-    >["external"][];
+  toExternalValue(value: Values<Child>["rawExternal"][]) {
+    return value.map((v) =>
+      this.field.toExternal(v)
+    ) as Values<Child>["external"][];
   }
 }
