@@ -74,7 +74,7 @@ export function build<
     }
 
     static getPK(value: PreInternal | Internal | PK) {
-      return typeof value == "object" ? (value[Resource.pkField] as PK) : value;
+      return typeof value == "object" ? (value[this.pkField] as PK) : value;
     }
 
     static matchFields<K extends string, V, R>(
@@ -99,9 +99,9 @@ export function build<
     static commit(data: Lazy<PreInternal> | Lazy<PreInternal>[]) {
       const toPreInternal = (data: Lazy<PreInternal>) => {
         const fields = {
-          ...Resource.fields.default,
-          ...Resource.fields.response,
-          ...Resource.fields.request,
+          ...this.fields.default,
+          ...this.fields.response,
+          ...this.fields.request,
         };
         const processed = {};
         for (const k in data) {
@@ -138,15 +138,15 @@ export function build<
       const save = (data: Internal) => {
         const pk = this.getPK(data);
 
-        if (!Resource.objects[pk]) {
-          Resource.objects[pk] = data;
+        if (!this.objects[pk]) {
+          this.objects[pk] = data;
           return data;
         } else {
           Object.entries(data).forEach(([k, v]) => {
-            if (Resource.getters && k in Resource.getters) return;
-            Resource.objects[pk][k as keyof Internal] = v as Values<Internal>;
+            if (this.getters && k in this.getters) return;
+            this.objects[pk][k as keyof Internal] = v as Values<Internal>;
           });
-          return Resource.objects[pk];
+          return this.objects[pk];
         }
       };
 
