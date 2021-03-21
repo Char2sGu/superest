@@ -88,45 +88,54 @@ export function build<
       return Object.fromEntries(entries) as Record<K, R>;
     }
 
+    /**
+     * Define descriptors because Vue 2.x will also define descriptors on the object
+     * to observe changes, which will cover the raw data and make the `Proxy` get a wrong
+     * value
+     * @param data
+     */
     static commit(data: Lazy<PreInternal>): Internal;
     static commit(data: Lazy<PreInternal>[]): Internal[];
     static commit(data: Lazy<PreInternal> | Lazy<PreInternal>[]) {
-      // define descriptors because Vue 2.x will also define descriptors on the object
-      // to observe changes, which will cover the raw data and make the `Proxy` get a wrong
-      // value
-      if (data instanceof Array) return data.map((data) => this.commit(data));
-      type V = Internal;
-      const fields = {
-        ...Resource.fields.default,
-        ...Resource.fields.response,
-        ...Resource.fields.request,
-      };
-      const getters = Resource.getters;
-      const processed = {};
-      for (const k in data) {
-        Object.defineProperty(processed, k, {
-          get: () => data[k](),
-          set: (v) => {
-            fields[k].validate(v);
-            data[k as keyof typeof data] = () => v;
-          },
-          configurable: true,
-          enumerable: true,
-        });
-      }
-      if (getters)
-        for (const k in getters) {
+      const toPreInternal = (data: Lazy<PreInternal>) => {
+        const fields = {
+          ...Resource.fields.default,
+          ...Resource.fields.response,
+          ...Resource.fields.request,
+        };
+        const processed = {};
+        for (const k in data) {
           Object.defineProperty(processed, k, {
-            get: () => getters[k](processed as V),
+            get: () => data[k](),
+            set: (v) => {
+              fields[k].validate(v);
+              data[k as keyof typeof data] = () => v;
+            },
             configurable: true,
             enumerable: true,
           });
         }
+        return processed as PreInternal;
+      };
+
+      const applyGetters = (data: PreInternal) => {
+        const getters = this.getters;
+        if (getters)
+          for (const k in getters) {
+            Object.defineProperty(data, k, {
+              get: () => getters[k](data),
+              configurable: true,
+              enumerable: true,
+            });
+          }
+        return data as Internal;
+      };
 
       /**
        * Ensure that the objects obtained through a specific primary key are always the same.
+       * @param data
        */
-      const save = (data: V) => {
+      const save = (data: Internal) => {
         const pk = this.getPK(data);
 
         if (!Resource.objects[pk]) {
@@ -135,12 +144,16 @@ export function build<
         } else {
           Object.entries(data).forEach(([k, v]) => {
             if (Resource.getters && k in Resource.getters) return;
-            Resource.objects[pk][k as keyof V] = v as Values<V>;
+            Resource.objects[pk][k as keyof Internal] = v as Values<Internal>;
           });
           return Resource.objects[pk];
         }
       };
-      return save(processed as V);
+
+      if (data instanceof Array) return data.map((data) => this.commit(data));
+      const preInternal = toPreInternal(data);
+      const internal = applyGetters(preInternal);
+      return save(internal);
     }
 
     constructor(options: Opts) {
