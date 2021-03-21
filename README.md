@@ -210,6 +210,8 @@ build({
 
 ### Integrate with Vue 2.x
 
+**NOTE**: Object.value(\<returned by reactive()>) is not reactive for an unknown reason
+
 ```ts
 function reactive() {
   const reactive = Vue.observable({
