@@ -1,3 +1,5 @@
+export type Values<T> = T[keyof T];
+
 export function transformCase<R>(data: R, handler?: (v: string) => string): R {
   if (
     !handler ||
@@ -15,7 +17,7 @@ export function transformCase<R>(data: R, handler?: (v: string) => string): R {
     delete data[k as keyof R];
     data[handler(k) as keyof R] = (v && typeof v == "object"
       ? transformCase(v as R, handler)
-      : v) as R[keyof R];
+      : v) as Values<R>;
   }
   return data as R;
 }

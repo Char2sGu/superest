@@ -1,4 +1,5 @@
-import { Field, FieldOptions, Lazy, FieldValues } from "./fields";
+import { Field, FieldOptions, FieldValues, Lazy } from "./fields";
+import { Values } from "./utils";
 import { IsInstanceValidator, ValidationError } from "./validators";
 
 export type PK = string | number;
@@ -134,7 +135,7 @@ export function build<
         } else {
           Object.entries(data).forEach(([k, v]) => {
             if (Resource.getters && k in Resource.getters) return;
-            Resource.objects[pk][k as keyof V] = v as V[keyof V];
+            Resource.objects[pk][k as keyof V] = v as Values<V>;
           });
           return Resource.objects[pk];
         }
