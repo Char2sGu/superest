@@ -1,5 +1,23 @@
 export type Values<T> = T[keyof T];
 
+/**
+ * https://stackoverflow.com/questions/50374908/transform-union-type-to-intersection-type
+ */
+export type UnionToIntersection<U> = (
+  U extends any ? (k: U) => void : never
+) extends (k: infer I) => void
+  ? I
+  : never;
+
+/**
+ * Extract from `T` those keys whose values are assignable to `U`.
+ */
+export type ExtractKeys<T, U> = Values<
+  {
+    [K in keyof T]: T[K] extends U ? K : never;
+  }
+>;
+
 export function transformCase<R>(data: R, handler?: (v: string) => string): R {
   if (
     !handler ||
@@ -21,15 +39,6 @@ export function transformCase<R>(data: R, handler?: (v: string) => string): R {
   }
   return data as R;
 }
-
-/**
- * https://stackoverflow.com/questions/50374908/transform-union-type-to-intersection-type
- */
-export type UnionToIntersection<U> = (
-  U extends any ? (k: U) => void : never
-) extends (k: infer I) => void
-  ? I
-  : never;
 
 export function mixinStatic<Base extends Function, Mixins extends Function[]>(
   base: Base,

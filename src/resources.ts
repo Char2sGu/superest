@@ -1,5 +1,5 @@
 import { Field, FieldOptions, FieldValues, Lazy } from "./fields";
-import { Values } from "./utils";
+import { ExtractKeys, Values } from "./utils";
 import { IsInstanceValidator, ValidationError } from "./validators";
 
 export type PK = string | number;
@@ -46,7 +46,7 @@ export function build<
 >(options: {
   objects?: Record<PK, Data<Fields, Getters>>;
   fields: Fields;
-  pkField: keyof (Fields["default"] & Fields["response"]);
+  pkField: ExtractKeys<FieldsValues<Fields>["internal"], string | number>;
   getters?: Getters;
 }) {
   type RawInternal = FieldsValues<Fields>["rawInternal"];
