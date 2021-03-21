@@ -104,8 +104,8 @@ describe("Validators", function () {
     });
 
     describe("Multi Types", function () {
-      const values = ["", 0];
-      const types = values.map((v) => typeof v);
+      const FieldValues = ["", 0];
+      const types = FieldValues.map((v) => typeof v);
       const validator = new TypeValidator(...types);
 
       it("type not in these should't pass", function () {
@@ -113,7 +113,7 @@ describe("Validators", function () {
       });
 
       it("type in these should pass", function () {
-        values.forEach((v) => validator.validate(v));
+        FieldValues.forEach((v) => validator.validate(v));
       });
     });
   });

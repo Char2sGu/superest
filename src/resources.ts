@@ -1,4 +1,4 @@
-import { Field, FieldOptions, Lazy, Values } from "./fields";
+import { Field, FieldOptions, Lazy, FieldValues } from "./fields";
 import { IsInstanceValidator, ValidationError } from "./validators";
 
 export type PK = string | number;
@@ -11,22 +11,22 @@ export interface GettersOptions<Fields extends FieldsOptions>
 
 export type FieldsValues<Fields extends FieldsOptions> = {
   rawInternal: {
-    [N in keyof (Fields["default"] & Fields["response"])]: Values<
+    [N in keyof (Fields["default"] & Fields["response"])]: FieldValues<
       (Fields["default"] & Fields["response"])[N]
     >["rawInternal"];
   };
   internal: {
-    [N in keyof (Fields["default"] & Fields["response"])]: Values<
+    [N in keyof (Fields["default"] & Fields["response"])]: FieldValues<
       (Fields["default"] & Fields["response"])[N]
     >["internal"];
   };
   rawExternal: {
-    [N in keyof (Fields["default"] & Fields["request"])]: Values<
+    [N in keyof (Fields["default"] & Fields["request"])]: FieldValues<
       (Fields["default"] & Fields["request"])[N]
     >["rawExternal"];
   };
   external: {
-    [N in keyof (Fields["default"] & Fields["request"])]: Values<
+    [N in keyof (Fields["default"] & Fields["request"])]: FieldValues<
       (Fields["default"] & Fields["request"])[N]
     >["external"];
   };

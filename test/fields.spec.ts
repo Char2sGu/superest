@@ -75,14 +75,14 @@ describe("Fields", function () {
     const childField = new NumberField({});
     const field = new ListField({ field: childField });
 
-    it("internal value should be a list of child fields' internal values", function () {
+    it("internal value should be a list of child fields' internal FieldValues", function () {
       assert.deepStrictEqual(
         field.toInternal([value])(),
         [value].map((v) => childField.toInternal(v)())
       );
     });
 
-    it("external value should be a list of child fileds' external values", function () {
+    it("external value should be a list of child fileds' external FieldValues", function () {
       assert.deepStrictEqual(
         field.toExternal([value]),
         [value].map((v) => childField.toExternal(v))

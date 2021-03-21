@@ -6,7 +6,7 @@ export {
   ListField,
   NumberField,
   StringField,
-  Values,
+  FieldValues,
 } from "./fields";
 export { build } from "./resources";
 export { transformCase, mixinStatic } from "./utils";

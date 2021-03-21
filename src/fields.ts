@@ -13,7 +13,7 @@ export interface FieldOptions extends Record<string, unknown> {
   optional?: boolean;
 }
 
-export type Values<F extends Field> = F extends Field<
+export type FieldValues<F extends Field> = F extends Field<
   infer Opts,
   infer VRI,
   infer VI,
@@ -46,7 +46,7 @@ export abstract class Field<
   readonly nullable;
   readonly optional;
 
-  // Strangely, if `options` is not made a attribute, the type `Values` will fail
+  // Strangely, if `options` is not made a attribute, the type `FieldValues` will fail
   constructor(readonly options: Opts) {
     this.nullable = options.nullable;
     this.optional = options.optional;
@@ -215,10 +215,10 @@ export class ListField<
   Child extends Field
 > extends Field<
   Opts,
-  Values<Child>["rawInternal"][],
-  Values<Child>["internal"][],
-  Values<Child>["rawExternal"][],
-  Values<Child>["external"][]
+  FieldValues<Child>["rawInternal"][],
+  FieldValues<Child>["internal"][],
+  FieldValues<Child>["rawExternal"][],
+  FieldValues<Child>["external"][]
 > {
   readonly field;
 
@@ -234,13 +234,13 @@ export class ListField<
     });
   }
 
-  toInternalValue(value: Values<Child>["rawInternal"][]) {
+  toInternalValue(value: FieldValues<Child>["rawInternal"][]) {
     const ret = value.map((v) => this.field.toInternal(v));
-    return () => ret.map((v) => v()) as Values<Child>["internal"][];
+    return () => ret.map((v) => v()) as FieldValues<Child>["internal"][];
   }
-  toExternalValue(value: Values<Child>["rawExternal"][]) {
+  toExternalValue(value: FieldValues<Child>["rawExternal"][]) {
     return value.map((v) =>
       this.field.toExternal(v)
-    ) as Values<Child>["external"][];
+    ) as FieldValues<Child>["external"][];
   }
 }

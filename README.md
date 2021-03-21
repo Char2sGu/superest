@@ -83,12 +83,12 @@ It allows multiple field options to describe the fields that change between requ
 
 ## Types
 
-You can use the tool type `Values` to get the value type of a `Field`.
+You can use the tool type `FieldValues` to get the value type of a `Field`.
 
 Remember that `Resource` is derived from `Field`.
 
 ```ts
-type InternalTypeOfSomeField = Values<SomeField>["internal"];
+type InternalTypeOfSomeField = FieldValues<SomeField>["internal"];
 ```
 
 ## Committing Existing Data
