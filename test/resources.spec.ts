@@ -6,6 +6,7 @@ import {
   NumberField,
   ValidationError,
 } from "../src";
+import { Storage } from "../src/storage";
 
 describe("Resource", function () {
   class Resource<Opts extends FieldOptions> extends build({
@@ -19,26 +20,13 @@ describe("Resource", function () {
       request: {},
     },
     pkField: "id",
+    storage: new Storage(),
     getters: {
       idGetter: (data) => data.id,
     },
   })<Opts> {}
 
   describe("Static", function () {
-    describe(`#${Resource.clear.name}()`, function () {
-      it("objects should be empty", function () {
-        Resource.objects[0] = {
-          id: 0,
-          date: new Date(),
-          idGetter: 0,
-        };
-
-        Resource.clear();
-
-        assert.strictEqual(Object.keys(Resource.objects).length, 0);
-      });
-    });
-
     describe(`#${Resource.getPK.name}()`, function () {
       const id = 1;
 
@@ -81,7 +69,11 @@ describe("Resource", function () {
           id: () => id,
           date: () => date,
         });
-        assert.strictEqual(Resource.objects[ret.id], ret, "data is not saved");
+        assert.strictEqual(
+          Resource.storage.retrieve(ret.id),
+          ret,
+          "data is not saved"
+        );
         assert.strictEqual(ret.idGetter, ret.id, "getters fail");
       });
 
@@ -91,7 +83,11 @@ describe("Resource", function () {
           id: () => id,
           date: () => date,
         });
-        assert.strictEqual(ret, Resource.objects[id], "reference changed");
+        assert.strictEqual(
+          ret,
+          Resource.storage.retrieve(id),
+          "reference changed"
+        );
         assert.strictEqual(
           ret.date.toISOString(),
           date.toISOString(),

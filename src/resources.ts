@@ -1,8 +1,7 @@
 import { Field, FieldOptions, FieldValues, Lazy } from "./fields";
-import { ExtractKeys, Values } from "./utils";
+import { AbstractStorage, PK } from "./storage";
+import { ExtractKeys } from "./utils";
 import { IsInstanceValidator, ValidationError } from "./validators";
-
-export type PK = string | number;
 
 export interface FieldsOptions<F extends Field = Field>
   extends Record<"default" | "response" | "request", Record<string, F>> {}
@@ -41,12 +40,13 @@ export type Data<
 
 export function build<
   Fields extends FieldsOptions<F>,
+  PKField extends ExtractKeys<FieldsValues<Fields>["internal"], PropertyKey>,
   Getters extends GettersOptions<Fields>,
   F extends Field
 >(options: {
-  objects?: Record<PK, Data<Fields, Getters>>;
   fields: Fields;
-  pkField: ExtractKeys<FieldsValues<Fields>["internal"], string | number>;
+  pkField: PKField;
+  storage: AbstractStorage<Data<Fields, Getters>>; // TODO: more detailed primary key generic type
   getters?: Getters;
 }) {
   type RawInternal = FieldsValues<Fields>["rawInternal"];
@@ -62,19 +62,15 @@ export function build<
     RawExternal,
     External
   > {
-    static readonly objects = options.objects ?? {};
+    static readonly storage = options.storage;
     static readonly pkField = options.pkField;
     static readonly fields = options.fields;
     static readonly getters = options.getters;
 
-    static clear() {
-      for (const k in this.objects) {
-        delete this.objects[k];
-      }
-    }
-
-    static getPK(value: PreInternal | Internal | PK) {
-      return typeof value == "object" ? (value[this.pkField] as PK) : value;
+    static getPK(value: PreInternal | Internal | PK<Internal>) {
+      return typeof value == "object"
+        ? (value[Resource.pkField] as PK<Internal>)
+        : value;
     }
 
     static matchFields<K extends string, V, R>(
@@ -138,15 +134,14 @@ export function build<
       const save = (data: Internal) => {
         const pk = this.getPK(data);
 
-        if (!this.objects[pk]) {
-          this.objects[pk] = data;
-          return data;
-        } else {
-          Object.entries(data).forEach(([k, v]) => {
-            if (this.getters && k in this.getters) return;
-            this.objects[pk][k as keyof Internal] = v as Values<Internal>;
-          });
-          return this.objects[pk];
+        if (!this.storage.exists(pk)) return this.storage.insert(pk, data);
+        else {
+          if (this.getters)
+            // exclude getters
+            for (const k in data) {
+              if (k in this.getters) delete data[k];
+            }
+          return this.storage.update(pk, data);
         }
       };
 
@@ -174,7 +169,7 @@ export function build<
       });
     }
 
-    toInternalValue(value: RawInternal | PK): () => Internal {
+    toInternalValue(value: RawInternal | PK<Internal>): () => Internal {
       if (typeof value == "object") {
         const data = Resource.commit(
           Resource.matchFields(
@@ -193,7 +188,7 @@ export function build<
         );
         return () => data;
       } else {
-        return () => Resource.objects[value];
+        return () => Resource.storage.retrieve(value);
       }
     }
     toExternalValue(value: RawExternal): External {
