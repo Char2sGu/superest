@@ -47,7 +47,7 @@ export function build<
   fields: Fields;
   pkField: PKField;
   storage: AbstractStorage<Data<Fields, Getters>>; // TODO: more detailed primary key generic type
-  getters?: Getters;
+  getters: Getters;
 }) {
   type RawInternal = FieldsValues<Fields>["rawInternal"];
   type PreInternal = FieldsValues<Fields>["internal"];
