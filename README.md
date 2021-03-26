@@ -1,241 +1,132 @@
 # superest
 
-Fully typed backend data management
+Typed data management for frontends
 
 # Features
 
-- Quite strong and complex generic types
-- Store all the retrieved objects indexed by primary keys and keep the reference effective
-- Automatically link primary keys to the actual object stored
-- Nested data structures
-- Data validations everywhere and easy-to-read validation error
-- Computed fields
-- Fully customizable http actions
+The main problem solved by `superest` is the processing of relational data. It automatically links relational data (by defining `getters`) according to the primary key to construct nested data objects, so that you could access your data like this: `users[3].friendships[4].target.name` (even longer if you want).
 
-With `superest`, any data just need to be retrieved from the backend once, and you could write this kind of statements to access your data: `user.friends[0].chatChannel.members[0].user.username`
+- Process primary key related fields to embed related data
+- Fairly strongly typed
+- Basic data validations
+- Computed attributes
+- Permanent effective object reference
 
 # Usage
 
-## Fields
+## Creating Serializers
 
-`Field` is used to describe a single field of an object of a resource.
+A `Serializer` is a top-level `Field` composed by multiple children `Field` objects.
 
-|     | Field          | Internal Value | External Value |
-| --- | -------------- | -------------- | -------------- |
-| 1   | `StringField`  | `string`       | `string`       |
-| 2   | `NumberField`  | `number`       | `number`       |
-| 3   | `BooleanField` | `boolean`      | `boolean`      |
-| 4   | `DateField`    | `Date`         | `string`       |
-| 5   | `ListField`    | `Array`        | `Array`        |
-
-| Option    | Type      | Significance                           | Affected Process | Owner |
-| --------- | --------- | -------------------------------------- | ---------------- | ----- |
-| nullable  | `boolean` | whether the value could be `null`      | both             | -     |
-| optional  | `boolean` | whether the value could be `undefined` | to external      | -     |
-| choices   | `Array`   | -                                      | to external      | 1, 2  |
-| maxLength | `number`  | -                                      | to external      | 1     |
-| minLength | `number`  | -                                      | to external      | 1     |
-| maxValue  | `number`  | -                                      | to external      | 2, 4  |
-| minValue  | `number`  | -                                      | to external      | 2, 4  |
-| field     | `Field`   | specify the child fields               | both             | 5     |
-
-## Creating Resources
-
-`Resource` is a special `Field`.
+| Field          | Internal Value | External Value |
+| -------------- | -------------- | -------------- |
+| `StringField`  | `string`       | `string`       |
+| `NumberField`  | `number`       | `number`       |
+| `BooleanField` | `boolean`      | `boolean`      |
+| `DateField`    | `Date`         | `string`       |
+| `ListField`    | `Array`        | `Array`        |
 
 ```ts
-class MyResource<Opts extends FieldOptions> extends build({
-  objects: {},
+// general options
+const id = new NumberField({});
+const pkField = "id";
+
+// types
+export type Label = FieldValues<LabelSerializer<{}>>["internal"];
+export type User = FieldValues<UserSerializer<{}>>["internal"];
+
+// object pools for storage
+export const labels: Record<PK<Label>, Label> = {};
+export const users: Record<PK<User>, User> = {};
+
+export class LabelSerializer<Opts extends FieldOptions> extends build({
   fields: {
-    default: {
-      username: new StringField({}),
-      date: new DateField({ nullable: true, optional: true }),
+    both: {
+      // fields in both responses and requests
+      name: new StringField({}),
     },
     response: {
-      id: new NumberField({}),
+      // fields in responses
+      id,
+    },
+    request: {
+      // fields in requests
+    },
+  },
+  pkField, // field name of the primary key field
+  getters: {}, // computed attributes
+})<Opts> {
+  static readonly storage = new Storage(labels);
+}
+
+export class UserSerializer<Opts extends FieldOptions> extends build({
+  fields: {
+    both: {
+      username: new StringField({}),
+    },
+    response: {
+      id,
+      label: new LabelSerializer({}), // nested input
     },
     request: {
       password: new StringField({}),
+      label: new NumberField({}), // primary key output
     },
   },
-  pkField: "id",
+  pkField,
   getters: {
     idGetter: (data) => data.id,
   },
-})<Opts> {}
-```
-
-Required Options:
-
-- `fields` - Data structure
-  - `response` - Fields in responses
-  - `request` - Fields in requests
-  - `default` - Fields in both responses and requests
-- `pkField` - Field name of the primary key field  
-  Limited to be a key of `fields.default` or `fields.response`.
-
-Optional Options:
-
-- `objects` - Data storage object
-- `getters` - Computed attributes
-
-It allows multiple field options to describe the fields that change between request and response by defining them both in `fields.request` and `fields.response`. **NOTE** that fields in `fields.default` must not appear in `fields.response` or `fields.request`.
-
-## Types
-
-You can use the tool type `FieldValues` to get the value type of a `Field`.
-
-Remember that `Resource` is derived from `Field`.
-
-```ts
-type InternalTypeOfSomeField = FieldValues<SomeField>["internal"];
-```
-
-## Committing Existing Data
-
-`.commit()` accepts a internal data object, defines computed fields on it and saves it to `.objects` using its primary key as the index. It also accepts a list of objects.
-
-```ts
-const data = MyResource.commit({
-  id: 1,
-  username: "aaaabbbb",
-  date: new Date(),
-});
-
-data == MyResource.objects[data.id]; // true.
-data.idGetter == data.id; // true
-data.id = "illegal"; // ValidationError
-```
-
-To update the data, you can commit another object with a same primary key, then each field in the old object will be updated but the reference will not change.
-
-```ts
-const updated = MyResource.commit({
-  id: 1,
-  username: "updated",
-  date: new Date(),
-});
-
-updated == data; // true
-```
-
-## Clearing Storage
-
-This will **delete** any keys on `.objects`, so the reference will not change either.
-
-```ts
-const objects = MyResource.objects;
-MyResource.clear();
-
-Object.keys(MyResource.objects).length; // 0
-MyResource.objects == objects; // true
-```
-
-## Committing External Response Data
-
-`.toInternal()` will convert the object to internal data, and then call `.commit()`
-
-```ts
-const external = {
-  id: 1,
-  username: "updated",
-  date: new Date().toISOString(), // <- string
-};
-const dataGetter = new MyResource({}).toInternal(external);
-const data = dataGetter();
-
-data.date; // <- Date
-```
-
-It can also accepts a primary key, then the getter returned will return the corresponding stored data object or `undefined`.
-
-## Convertting to External Data
-
-```ts
-const external = new MyResource({}).toExternal({
-  username: "username",
-  password: "abcdefg",
-  date: new Date(), // <- Date
-});
-
-external.date; // <- string
-```
-
-## Nesting
-
-Since `Resource` is derived from `Field`, so it can also be used in the `fields` options.
-
-```ts
-build({
-  // ...
-  fields: {
-    default: {
-      nested: new AnotherResource({}),
-    },
-    // ...
-  },
-  // ...
-});
-```
-
-Since `.toInternal()` can accept a primary key, the same object only needs to be retrieved from the backend once, and then any other objects from the backend only need to refer to the primary key of the retrieved object, and it will be automatically linked to the actual object.
-
-## Actions
-
-```ts
-class MyResource<Opts extends FieldOptions> extends build({
-  // ...
 })<Opts> {
-  static baseURL = "/api/some-resource/";
-
-  static async list(page?: number) {
-    // ...
-  }
+  static readonly storage = new Storage(users);
 }
 ```
 
-## Custom Storage
-
-The option `.objects` specifies the object where the data is stored, defaultly it is `{}`. You could pass your own object to implement something really interesting.
-
-### Share Storage With Another Resource
+## Serializing
 
 ```ts
-build({
-  // ...
-  objects: anotherResource.objects,
-  // ...
-});
+const labelRawResponseData: FieldValues<LabelSerializer<{}>>["rawInternal"] = {
+  id: 1,
+  name: "administrators",
+  createdAt: new Date().toISOString(),
+};
+
+const userRawResponseData: FieldValues<UserSerializer<{}>>["rawInternal"] = {
+  id: 1,
+  username: "admin",
+  label: 1, // primary key
+};
+
+const labelInternalData = new LabelSerializer({}).toInternal(
+  labelRawResponseData
+)();
+labelInternalData.createdAt instanceof Date; // true
+labels[labelInternalData.id] == labelInternalData; // true
+
+const userInternalData = new UserSerializer({}).toInternal(
+  userRawResponseData
+)();
+userInternalData.idGetter == userInternalData.id; // true
+userInternalData.label == labelInternalData; // true
+
+// duplicated serializing: reference will be permanently effective
+const duplicatedUserRawResponseData = {
+  ...userRawResponseData,
+  username: "updated",
+};
+const duplicatedUserInternalData = new UserSerializer({}).toInternal(
+  duplicatedUserRawResponseData
+)();
+duplicatedUserInternalData == userInternalData; // true
 ```
 
-### Integrate with Vue 2.x
-
-**NOTE**: Object.value(\<returned by reactive()>) is not reactive for an unknown reason
+## Deserializing
 
 ```ts
-function reactive() {
-  const reactive = Vue.observable({
-    objects: {},
-  });
-  type K = keyof typeof reactive.objects;
-  // must access `reactive.object` instead of `target` to trigger reaction
-  return new Proxy(reactive.objects, {
-    set: (target, p, value) => {
-      Vue.set(reactive.objects, p as K, value);
-      return true;
-    },
-    get: (target, p) => reactive.objects[p as K],
-    deleteProperty: (target, p) => {
-      Vue.delete(reactive.objects, p as K);
-      return true;
-    },
-  });
-}
-
-build({
-  // ...
-  objects: reactive(),
-  // ...
+new UserSerializer({}).toExternal({
+  username: "admin",
+  label: 1,
+  password: "abcdefg",
 });
 ```
 
