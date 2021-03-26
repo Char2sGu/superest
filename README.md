@@ -1,6 +1,6 @@
 # superest
 
-Typed data management for frontends
+Typed API data serialization for frontends
 
 # Features
 
