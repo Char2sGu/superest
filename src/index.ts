@@ -8,7 +8,7 @@ export {
   NumberField,
   StringField,
 } from "./fields";
-export { build } from "./resources";
+export { build } from "./serializers";
 export { AbstractStorage, PK, Storage } from "./storage";
 export { ExtractKeys, mixinStatic, transformCase, Values } from "./utils";
 export { ValidationError } from "./validators";

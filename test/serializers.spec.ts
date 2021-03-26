@@ -7,8 +7,8 @@ import {
   ValidationError,
 } from "../src";
 
-describe("Resource", function () {
-  class Resource<Opts extends FieldOptions> extends build({
+describe("Serializer", function () {
+  class Serializer<Opts extends FieldOptions> extends build({
     fields: {
       both: {
         date: new DateField({}),
@@ -25,11 +25,11 @@ describe("Resource", function () {
   })<Opts> {}
 
   describe("Static", function () {
-    describe(`#${Resource.getPK.name}()`, function () {
+    describe(`#${Serializer.getPK.name}()`, function () {
       const id = 1;
 
       it("passed a legal object", function () {
-        const ret = Resource.getPK({
+        const ret = Serializer.getPK({
           id,
           date: new Date(),
         });
@@ -37,19 +37,19 @@ describe("Resource", function () {
       });
 
       it("passed a primary key", function () {
-        const ret = Resource.getPK(id);
+        const ret = Serializer.getPK(id);
         assert.strictEqual(ret, id);
       });
     });
 
-    describe(`#${Resource.matchFields.name}()`, function () {
+    describe(`#${Serializer.matchFields.name}()`, function () {
       it("data should be mapped properly", function () {
-        const ret = Resource.matchFields(
+        const ret = Serializer.matchFields(
           {
             other: null,
             id: null,
           },
-          { ...Resource.fields.both, ...Resource.fields.response },
+          { ...Serializer.fields.both, ...Serializer.fields.response },
           (...args) => args
         );
 
@@ -58,17 +58,17 @@ describe("Resource", function () {
       });
     });
 
-    describe(`#${Resource.commit.name}()`, function () {
+    describe(`#${Serializer.commit.name}()`, function () {
       const id = 1;
       const date = new Date();
 
       it("data should be processed and saved", function () {
-        const ret = Resource.commit({
+        const ret = Serializer.commit({
           id: () => id,
           date: () => date,
         });
         assert.strictEqual(
-          Resource.storage.retrieve(ret.id),
+          Serializer.storage.retrieve(ret.id),
           ret,
           "data is not saved"
         );
@@ -77,13 +77,13 @@ describe("Resource", function () {
 
       it("save again should update the data but not change the reference", function () {
         const date = new Date();
-        const ret = Resource.commit({
+        const ret = Serializer.commit({
           id: () => id,
           date: () => date,
         });
         assert.strictEqual(
           ret,
-          Resource.storage.retrieve(id),
+          Serializer.storage.retrieve(id),
           "reference changed"
         );
         assert.strictEqual(
@@ -96,7 +96,7 @@ describe("Resource", function () {
   });
 
   describe("Instance", function () {
-    const asField = new Resource({});
+    const asField = new Serializer({});
 
     describe(`#${asField.validate.name}()`, function () {
       it("should throw an validation error when some of the fields are illegal", function () {

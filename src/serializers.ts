@@ -50,7 +50,7 @@ export function build<
   type RawExternal = FieldsValues<Fields>["rawExternal"];
   type External = FieldsValues<Fields>["external"];
 
-  return class Resource<Opts extends FieldOptions> extends Field<
+  return class Serializer<Opts extends FieldOptions> extends Field<
     Opts,
     RawInternal,
     Internal,
@@ -64,7 +64,7 @@ export function build<
 
     static getPK(value: PreInternal | Internal | PK<Internal>) {
       return typeof value == "object"
-        ? (value[Resource.pkField] as PK<Internal>)
+        ? (value[Serializer.pkField] as PK<Internal>)
         : value;
     }
 
@@ -151,12 +151,12 @@ export function build<
       this.validators.push(new IsInstanceValidator(Object));
       this.validators.push({
         validate: (value: Record<string, unknown>) => {
-          Resource.matchFields(
+          Serializer.matchFields(
             value,
             {
-              ...Resource.fields.both,
-              ...Resource.fields.response,
-              ...Resource.fields.request,
+              ...Serializer.fields.both,
+              ...Serializer.fields.response,
+              ...Serializer.fields.request,
             },
             (k, v, field) => field.validate(v)
           );
@@ -166,12 +166,12 @@ export function build<
 
     toInternalValue(value: RawInternal | PK<Internal>): () => Internal {
       if (typeof value == "object") {
-        const data = Resource.commit(
-          Resource.matchFields(
+        const data = Serializer.commit(
+          Serializer.matchFields(
             value,
             {
-              ...Resource.fields.both,
-              ...Resource.fields.response,
+              ...Serializer.fields.both,
+              ...Serializer.fields.response,
             },
             (k, v, field) =>
               this.handleValidationError(
@@ -183,15 +183,15 @@ export function build<
         );
         return () => data;
       } else {
-        return () => Resource.storage.retrieve(value);
+        return () => Serializer.storage.retrieve(value);
       }
     }
     toExternalValue(value: RawExternal): External {
-      return Resource.matchFields(
+      return Serializer.matchFields(
         value,
         {
-          ...Resource.fields.both,
-          ...Resource.fields.request,
+          ...Serializer.fields.both,
+          ...Serializer.fields.request,
         },
         (k, v, field) =>
           this.handleValidationError(field.toExternal.bind(field), value, k)(v)
