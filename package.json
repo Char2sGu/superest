@@ -1,7 +1,7 @@
 {
   "name": "superest",
   "version": "0.3.2",
-  "description": "Fully typed backend data management",
+  "description": "Typed API data serialization for frontends",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc -b src",
