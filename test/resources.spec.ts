@@ -11,7 +11,7 @@ import { Storage } from "../src/storage";
 describe("Resource", function () {
   class Resource<Opts extends FieldOptions> extends build({
     fields: {
-      default: {
+      both: {
         date: new DateField({}),
       },
       response: {
@@ -51,7 +51,7 @@ describe("Resource", function () {
             other: null,
             id: null,
           },
-          { ...Resource.fields.default, ...Resource.fields.response },
+          { ...Resource.fields.both, ...Resource.fields.response },
           (...args) => args
         );
 

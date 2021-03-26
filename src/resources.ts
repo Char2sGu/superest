@@ -4,30 +4,30 @@ import { ExtractKeys } from "./utils";
 import { IsInstanceValidator, ValidationError } from "./validators";
 
 export interface FieldsOptions<F extends Field = Field>
-  extends Record<"default" | "response" | "request", Record<string, F>> {}
+  extends Record<"both" | "response" | "request", Record<string, F>> {}
 
 export interface GettersOptions<Fields extends FieldsOptions>
   extends Record<string, (data: FieldsValues<Fields>["internal"]) => unknown> {}
 
 export type FieldsValues<Fields extends FieldsOptions> = {
   rawInternal: {
-    [N in keyof (Fields["default"] & Fields["response"])]: FieldValues<
-      (Fields["default"] & Fields["response"])[N]
+    [N in keyof (Fields["both"] & Fields["response"])]: FieldValues<
+      (Fields["both"] & Fields["response"])[N]
     >["rawInternal"];
   };
   internal: {
-    [N in keyof (Fields["default"] & Fields["response"])]: FieldValues<
-      (Fields["default"] & Fields["response"])[N]
+    [N in keyof (Fields["both"] & Fields["response"])]: FieldValues<
+      (Fields["both"] & Fields["response"])[N]
     >["internal"];
   };
   rawExternal: {
-    [N in keyof (Fields["default"] & Fields["request"])]: FieldValues<
-      (Fields["default"] & Fields["request"])[N]
+    [N in keyof (Fields["both"] & Fields["request"])]: FieldValues<
+      (Fields["both"] & Fields["request"])[N]
     >["rawExternal"];
   };
   external: {
-    [N in keyof (Fields["default"] & Fields["request"])]: FieldValues<
-      (Fields["default"] & Fields["request"])[N]
+    [N in keyof (Fields["both"] & Fields["request"])]: FieldValues<
+      (Fields["both"] & Fields["request"])[N]
     >["external"];
   };
 };
@@ -95,7 +95,7 @@ export function build<
     static commit(data: Lazy<PreInternal> | Lazy<PreInternal>[]) {
       const toPreInternal = (data: Lazy<PreInternal>) => {
         const fields = {
-          ...this.fields.default,
+          ...this.fields.both,
           ...this.fields.response,
           ...this.fields.request,
         };
@@ -159,7 +159,7 @@ export function build<
           Resource.matchFields(
             value,
             {
-              ...Resource.fields.default,
+              ...Resource.fields.both,
               ...Resource.fields.response,
               ...Resource.fields.request,
             },
@@ -175,7 +175,7 @@ export function build<
           Resource.matchFields(
             value,
             {
-              ...Resource.fields.default,
+              ...Resource.fields.both,
               ...Resource.fields.response,
             },
             (k, v, field) =>
@@ -195,7 +195,7 @@ export function build<
       return Resource.matchFields(
         value,
         {
-          ...Resource.fields.default,
+          ...Resource.fields.both,
           ...Resource.fields.request,
         },
         (k, v, field) =>
