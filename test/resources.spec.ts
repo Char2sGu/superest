@@ -6,7 +6,6 @@ import {
   NumberField,
   ValidationError,
 } from "../src";
-import { Storage } from "../src/storage";
 
 describe("Resource", function () {
   class Resource<Opts extends FieldOptions> extends build({
@@ -20,7 +19,6 @@ describe("Resource", function () {
       request: {},
     },
     pkField: "id",
-    storage: new Storage(),
     getters: {
       idGetter: (data) => data.id,
     },

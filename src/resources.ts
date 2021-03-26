@@ -1,5 +1,5 @@
 import { Field, FieldOptions, FieldValues, Lazy } from "./fields";
-import { AbstractStorage, PK } from "./storage";
+import { AbstractStorage, PK, Storage } from "./storage";
 import { ExtractKeys } from "./utils";
 import { IsInstanceValidator, ValidationError } from "./validators";
 
@@ -43,12 +43,7 @@ export function build<
   PKField extends ExtractKeys<FieldsValues<Fields>["internal"], PropertyKey>,
   Getters extends GettersOptions<Fields>,
   F extends Field
->(options: {
-  fields: Fields;
-  pkField: PKField;
-  storage: AbstractStorage<Data<Fields, Getters>>; // TODO: more detailed primary key generic type
-  getters: Getters;
-}) {
+>(options: { fields: Fields; pkField: PKField; getters: Getters }) {
   type RawInternal = FieldsValues<Fields>["rawInternal"];
   type PreInternal = FieldsValues<Fields>["internal"];
   type Internal = Data<Fields, Getters>;
@@ -62,7 +57,7 @@ export function build<
     RawExternal,
     External
   > {
-    static readonly storage = options.storage;
+    static readonly storage: AbstractStorage<Internal> = new Storage(); // TODO: more detailed primary key generic type
     static readonly pkField = options.pkField;
     static readonly fields = options.fields;
     static readonly getters = options.getters;
