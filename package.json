@@ -1,17 +1,36 @@
 {
   "name": "superest",
-  "version": "0.3.2",
+  "version": "0.6.0",
   "description": "Typed API data serialization for frontends",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc -b src",
     "test": "mocha test/**/*.ts -r ts-node/register"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TheNightmareX/superest.git"
+  },
+  "keywords": [
+    "front-end",
+    "web",
+    "serialization",
+    "serialize",
+    "deserialize",
+    "typescript",
+    "data",
+    "rest",
+    "restful"
+  ],
   "author": {
     "name": "Char2s",
-    "email": "TheNightmareX@foxmail.com"
+    "email": "Char2s@outlook.com"
   },
   "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/TheNightmareX/superest/issues"
+  },
+  "homepage": "https://github.com/TheNightmareX/superest#readme",
   "dependencies": {},
   "files": [
     "/src/*",
