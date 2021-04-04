@@ -6,6 +6,7 @@
   "scripts": {
     "prebuild": "rimraf dist",
     "build": "tsc -b",
+    "prepublishOnly": "npm run build || exit 1",
     "test": "mocha test/**/*.ts -r ts-node/register"
   },
   "repository": {
